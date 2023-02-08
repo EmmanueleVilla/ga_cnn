@@ -9,4 +9,6 @@
 
 void loadData(int size, int *labels, float *images, MODE mode);
 
+void loadLine(char *line, int *label, float *image, int index);
+
 #endif //GA_CNN_DATA_LOADER_CUH
