@@ -12,9 +12,9 @@ void loadDataWithCPU(int size, int *labels, float *images, FILE *stream) {
 
     start = clock();
 
-    char line[729 * 5];
+    char line[729 * 4];
     int count = 0;
-    while (fgets(line, 28 * 28 * 5, stream)) {
+    while (fgets(line, 28 * 28 * 4, stream)) {
         if (count == size) {
             break;
         }
