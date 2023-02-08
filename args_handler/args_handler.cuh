@@ -5,6 +5,8 @@
 #ifndef GA_CNN_ARGS_HANDLER_CUH
 #define GA_CNN_ARGS_HANDLER_CUH
 
+#include "args_extractor.cuh"
+
 bool handle(int argc, char **argv);
 
 #endif //GA_CNN_ARGS_HANDLER_CUH

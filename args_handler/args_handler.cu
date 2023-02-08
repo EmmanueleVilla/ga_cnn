@@ -21,14 +21,15 @@ bool handle(int argc, char **argv) {
         return true;
     }
 
-    enum MODE mode = NONE;
-    extractArgs(argc, argv, mode);
+    enum MODE argMode = NONE;
+    extractArgs(argc, argv, argMode);
 
-    if (mode == NONE) {
+    if (argMode == NONE) {
         printf("Mode not set. Use --mode or -m to set the mode.\n");
         return false;
     }
+
     int *labels = nullptr;
     float *images = nullptr;
-    loadData(10, labels, images);
+    loadData(60000, labels, images, argMode);
 }
