@@ -37,7 +37,7 @@ bool handle(int argc, char **argv) {
 
     int *labels = nullptr;
     float *images = nullptr;
-    loadData(60000, labels, images, argMode);
+    loadData(size, labels, images, argMode);
 
     return true;
 }

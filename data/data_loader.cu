@@ -7,6 +7,8 @@
 #include "data_loader_gpu.cuh"
 #include "file_loader.cuh"
 #include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 
 void loadLine(char *line, int *label, float *image, int index) {
     char delim[] = ",";
