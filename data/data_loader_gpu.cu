@@ -16,6 +16,8 @@
     }\
 }
 
+int atoi(char string[]);
+
 /**
  * This kernel counts the number of delimiters in the given buffer.
  * The buffer arrives as a string of characters, containing the data from the mnist_train.csv file.
@@ -36,6 +38,12 @@ __global__ void countDelimiters(const char *buf, int *result) {
     result[tid] = count;
 }
 
+/**
+ * This kernel fills the fieldsIndex array using the information from the prefixSum array.
+ * @param buf
+ * @param prefixSum
+ * @param result
+ */
 __global__ void fillFieldsIndexes(const char *buf, const int *prefixSum, int *result) {
     unsigned int tid;
     tid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -48,6 +56,25 @@ __global__ void fillFieldsIndexes(const char *buf, const int *prefixSum, int *re
             result[prefixSum[tid] + count] = i;
         }
     }
+}
+
+__global__ void extractData(const char *buf, const int *fieldsIndex, int *fields, int fieldsSize) {
+    unsigned int tid;
+    tid = blockIdx.x * blockDim.x + threadIdx.x;
+    //printf("tid: %d\n", tid);
+    if (tid > fieldsSize - 1) {
+        return;
+    }
+    int res = 0;
+    int start = max(0, fieldsIndex[tid] + 1);
+    int end = fieldsIndex[tid + 1];
+    //printf("start: %d, end: %d\n", start, end);
+    for (int i = start; i < end; i++) {
+        //printf("%c\n", buf[i]);
+        res = res * 10 + (buf[i] - '0');
+    }
+    fields[tid] = res;
+    //printf("fields[%d]: %d\n", tid, fields[tid]);
 }
 
 /**
@@ -108,6 +135,7 @@ void loadDataWithGPU(int size, int *labels, float *images, FILE *stream) {
     // Third step: fill the fieldsIndex array
     int *fieldsIndex;
     int numFields = prefix_sum[totalThreads - 1] + 1;
+
     fieldsIndex = (int *) malloc(numFields * sizeof(int));
 
     //Prepare the device memory
@@ -125,7 +153,26 @@ void loadDataWithGPU(int size, int *labels, float *images, FILE *stream) {
     cudaMemcpy(fieldsIndex, d_fieldsIndex, (prefix_sum[totalThreads - 1] + 1) * sizeof(int),
                cudaMemcpyDeviceToHost);
 
+    // Now we are ready to split the fields
+    // The number of fields is the number of delimiters plus one,
+    // so 60k entries * (28 * 28 + 1) = around 47 million fields
+    // I split the fields into N blocks of 1024 threads each,
+    // so I need 47 million / 1024 = 46k blocks
+    int numBlocks = ceil(numFields / 1024);
+    numThreads = 1024;
+
+    int *fields;
+    int *d_fields;
+    fields = (int *) malloc(numFields * sizeof(int));
+    cudaMalloc((void **) &d_fields, numFields * sizeof(int));
+
+    // Run the kernel
+    extractData <<<numBlocks, numThreads>>>(d_buffer, d_fieldsIndex, d_fields, numFields);
+    CHECK(cudaDeviceSynchronize());
+
+    cudaMemcpy(fields, d_fields, numFields * sizeof(int), cudaMemcpyDeviceToHost);
+
     stop = clock();
-    printf("start: %6.3ld\n", start);
+    printf("\nstart: %6.3ld\n", start);
     printf("stop: %6.3ld\n", stop);
 }
