@@ -30,8 +30,8 @@ bool handle(int argc, char **argv) {
         return false;
     }
 
-    if (size == -1) {
-        printf("Size not set. Use --size or -s to set the size.\n");
+    if (size < 1 || size > 60000) {
+        printf("Size not set or invalid. Must be between 1 and 60000. Use --size or -s to set the size.\n");
         return false;
     }
 

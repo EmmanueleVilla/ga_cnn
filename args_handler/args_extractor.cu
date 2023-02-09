@@ -22,9 +22,6 @@ void extractArgs(int argc, char **argv, MODE &mode, int &size) {
             if (i + 1 < argc) {
                 char *unused;
                 size = (int) strtol(argv[i + 1], &unused, 10);
-                if (size < 1 || size > 60000) {
-                    size = -1;
-                }
                 printf("Size set to %d.\n", size);
             }
         }
