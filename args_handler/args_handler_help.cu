@@ -9,6 +9,7 @@ void printHelp() {
     printf("This is the program made for the GPU Computing course @ UniMi by Emmanuele Villa.\n");
     printf("usage: ga-cnn [OPTIONS]\n");
     printf("\t-m, --mode <GPU|CPU>\tSelects the mode to run the program in.\n");
+    printf("\t-s, --size <int>\tSelects the size of the data to load.\n");
     printf("\t[-d, --debug]\t\tEnables the debug mode.\n");
     printf("\t[-h, --help]\t\tPrints the command arguments help.\n");
     printf("\t[-v, --version]\t\tPrints the program version.\n");

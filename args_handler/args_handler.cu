@@ -22,14 +22,22 @@ bool handle(int argc, char **argv) {
     }
 
     enum MODE argMode = NONE;
-    extractArgs(argc, argv, argMode);
+    int size = -1;
+    extractArgs(argc, argv, argMode, size);
 
     if (argMode == NONE) {
         printf("Mode not set. Use --mode or -m to set the mode.\n");
         return false;
     }
 
+    if (size == -1) {
+        printf("Size not set. Use --size or -s to set the size.\n");
+        return false;
+    }
+
     int *labels = nullptr;
     float *images = nullptr;
     loadData(60000, labels, images, argMode);
+
+    return true;
 }

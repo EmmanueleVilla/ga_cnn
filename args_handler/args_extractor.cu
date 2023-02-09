@@ -5,7 +5,7 @@
 #include "args_extractor.cuh"
 #include <stdio.h>
 
-void extractMode(int argc, char **argv, MODE &mode) {
+void extractArgs(int argc, char **argv, MODE &mode, int &size) {
     for (int i = 1; i < argc; i++) {
         if (strcmp("--mode", argv[i]) == 0 || strcmp("-m", argv[i]) == 0) {
             if (i + 1 < argc) {
@@ -18,9 +18,15 @@ void extractMode(int argc, char **argv, MODE &mode) {
                 }
             }
         }
+        if (strcmp("--size", argv[i]) == 0 || strcmp("-s", argv[i]) == 0) {
+            if (i + 1 < argc) {
+                char *unused;
+                size = (int) strtol(argv[i + 1], &unused, 10);
+                if (size < 1 || size > 60000) {
+                    size = -1;
+                }
+                printf("Size set to %d.\n", size);
+            }
+        }
     }
-}
-
-void extractArgs(int argc, char **argv, MODE &mode) {
-    extractMode(argc, argv, mode);
 }
