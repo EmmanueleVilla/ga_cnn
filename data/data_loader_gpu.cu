@@ -30,6 +30,7 @@ __global__ void countDelimiters(const char *buf, int *result) {
     unsigned int start = tid * 2500;
     unsigned int end = start + 2500;
     int count = 0;
+    // Loop unrolling?
     for (unsigned int i = start; i < end; i++) {
         if (buf[i] == ',' || buf[i] == '\n') {
             count++;
@@ -50,6 +51,7 @@ __global__ void fillFieldsIndexes(const char *buf, const int *prefixSum, int *re
     unsigned int start = tid * 2500;
     unsigned int end = start + 2500;
     int count = 0;
+    // Loop unrolling?
     for (int i = (int) start; i < end; i++) {
         if (buf[i] == ',' || buf[i] == '\n') {
             count++;
