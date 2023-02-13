@@ -3,6 +3,7 @@
 //
 
 #include "data_loader.cuh"
+#include "data_utils.cuh"
 #include "data_loader_cpu.cuh"
 #include "data_loader_gpu.cuh"
 #include "file_loader.cuh"
@@ -38,4 +39,5 @@ void loadData(int size, int *labels, float *images, MODE mode) {
     } else if (mode == GPU) {
         loadDataWithGPU(size, labels, images, stream);
     }
+    printData(5, labels, images);
 }

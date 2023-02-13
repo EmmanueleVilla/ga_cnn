@@ -21,8 +21,8 @@ int atoi(char string[]);
 /**
  * This kernel counts the number of delimiters in the given buffer.
  * The buffer arrives as a string of characters, containing the data from the mnist_train.csv file.
- * @param buf
- * @param result
+ * @param buf the buffer containing the data from the mnist_train.csv file.
+ * @param result the array containing the number of delimiters for each block.
  */
 __global__ void countDelimiters(const char *buf, int *result) {
     unsigned int tid;
@@ -40,9 +40,9 @@ __global__ void countDelimiters(const char *buf, int *result) {
 
 /**
  * This kernel fills the fieldsIndex array using the information from the prefixSum array.
- * @param buf
- * @param prefixSum
- * @param result
+ * @param buf the buffer containing the data from the mnist_train.csv file.
+ * @param prefixSum the array containing the prefix sum of the delimiters.
+ * @param result the array to store the indexes of the delimiters.
  */
 __global__ void fillFieldsIndexes(const char *buf, const int *prefixSum, int *result) {
     unsigned int tid;
@@ -58,23 +58,30 @@ __global__ void fillFieldsIndexes(const char *buf, const int *prefixSum, int *re
     }
 }
 
-__global__ void extractData(const char *buf, const int *fieldsIndex, int *fields, int fieldsSize) {
+/**
+ * Extracts the data from the buffer and stores it in the labels and images arrays.
+ * @param buf the buffer containing the data from the mnist_train.csv file.
+ * @param fieldsIndex the array containing the indexes of the delimiters
+ * @param labels the array to store the labels
+ * @param images the array to store the images
+ */
+__global__ void extractData(const char *buf, const int *fieldsIndex, int *labels, float *images, int size) {
     unsigned int tid;
     tid = blockIdx.x * blockDim.x + threadIdx.x;
-    //printf("tid: %d\n", tid);
-    if (tid > fieldsSize - 1) {
+    if (tid >= size) {
         return;
     }
     int res = 0;
     int start = max(0, fieldsIndex[tid] + 1);
     int end = fieldsIndex[tid + 1];
-    //printf("start: %d, end: %d\n", start, end);
     for (int i = start; i < end; i++) {
-        //printf("%c\n", buf[i]);
         res = res * 10 + (buf[i] - '0');
     }
-    fields[tid] = res;
-    //printf("fields[%d]: %d\n", tid, fields[tid]);
+    if (threadIdx.x == 0) {
+        labels[blockIdx.x] = res;
+    } else {
+        images[threadIdx.x + 784 * blockIdx.x] = ((float) res) / 255.0f;
+    }
 }
 
 /**
@@ -153,24 +160,23 @@ void loadDataWithGPU(int size, int *labels, float *images, FILE *stream) {
     cudaMemcpy(fieldsIndex, d_fieldsIndex, (prefix_sum[totalThreads - 1] + 1) * sizeof(int),
                cudaMemcpyDeviceToHost);
 
-    // Now we are ready to split the fields
-    // The number of fields is the number of delimiters plus one,
-    // so 60k entries * (28 * 28 + 1) = around 47 million fields
-    // I split the fields into N blocks of 1024 threads each,
-    // so I need 47 million / 1024 = 46k blocks
-    int numBlocks = ceil(numFields / 1024);
-    numThreads = 1024;
+    // Fourth step: extract the data
+    // In the csv we have 60k entries, each entry has 785 fields (784 pixels + 1 label)
+    // So to do everything in a single step, we'll have 60k blocks, each with 785 threads
+    int numBlocks = 60000;
+    numThreads = 785;
 
-    int *fields;
-    int *d_fields;
-    fields = (int *) malloc(numFields * sizeof(int));
-    cudaMalloc((void **) &d_fields, numFields * sizeof(int));
+    int *d_labels;
+    float *d_images;
+    cudaMalloc((void **) &d_labels, size * sizeof(int));
+    cudaMalloc((void **) &d_images, size * 784 * sizeof(float));
 
     // Run the kernel
-    extractData <<<numBlocks, numThreads>>>(d_buffer, d_fieldsIndex, d_fields, numFields);
+    extractData <<<numBlocks, numThreads>>>(d_buffer, d_fieldsIndex, d_labels, d_images, numFields);
     CHECK(cudaDeviceSynchronize());
 
-    cudaMemcpy(fields, d_fields, numFields * sizeof(int), cudaMemcpyDeviceToHost);
+    cudaMemcpy(labels, d_labels, size * sizeof(int), cudaMemcpyDeviceToHost);
+    cudaMemcpy(images, d_images, size * 784 * sizeof(float), cudaMemcpyDeviceToHost);
 
     stop = clock();
     printf("\nstart: %6.3ld\n", start);
