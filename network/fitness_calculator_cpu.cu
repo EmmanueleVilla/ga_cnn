@@ -32,7 +32,7 @@ int calculateNetworkLabelCPU(
     // Apply max pooling
     // Calculate dense layer
     // Return the label with the highest value
-    return 1;
+    return 5;
 }
 
 int calculateFitnessCPUSingleNetwork(
@@ -52,7 +52,7 @@ int calculateFitnessCPUSingleNetwork(
         }
         break;
     }
-    return (int) ((float) correct / dataCount * 100);
+    return (int) ((float) correct / (float) dataCount * 100);
 }
 
 
