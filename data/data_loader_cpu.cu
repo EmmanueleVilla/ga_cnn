@@ -25,6 +25,6 @@ void loadDataWithCPU(int size, int *labels, float *images, FILE *stream) {
     fclose(stream);
     stop = clock();
 
-    printf("%6.3ld", start);
-    printf("\n\n%6.3ld", stop);
+    printf("\n%6.3ld", start);
+    printf("\n\n%6.3ld\n", stop);
 }

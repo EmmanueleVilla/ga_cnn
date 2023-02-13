@@ -1,0 +1,22 @@
+//
+// Created by emman on 13/02/2023.
+//
+
+#include "init_networks_utils.cuh"
+#include <corecrt_math.h>
+#include <stdio.h>
+
+float randGaussian() {
+    float a = rand() / RAND_MAX;
+    float b = rand() / RAND_MAX;
+    if (a == 0) {
+        a = 0.0000001;
+    }
+    if (b == 0) {
+        b = 0.0000001;
+    }
+
+    float R0 = sqrt(-2.0 * log(a)) * cos(2 * M_PI * b);
+
+    return (R0 / 2) - 1.5f;
+}

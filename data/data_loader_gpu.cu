@@ -3,6 +3,7 @@
 //
 
 #include "data_loader_gpu.cuh"
+#include "../info/device_info.cuh"
 #include <stdio.h>
 #include <ctime>
 
@@ -27,10 +28,9 @@ int atoi(char string[]);
 __global__ void countDelimiters(const char *buf, int *result) {
     unsigned int tid;
     tid = blockIdx.x * blockDim.x + threadIdx.x;
-    unsigned int start = tid * 2500;
-    unsigned int end = start + 2500;
+    unsigned int start = tid * 313;
+    unsigned int end = start + 313;
     int count = 0;
-    //TODO Loop unrolling?
     for (unsigned int i = start; i < end; i++) {
         if (buf[i] == ',' || buf[i] == '\n') {
             count++;
@@ -48,11 +48,10 @@ __global__ void countDelimiters(const char *buf, int *result) {
 __global__ void fillFieldsIndexes(const char *buf, const int *prefixSum, int *result) {
     unsigned int tid;
     tid = blockIdx.x * blockDim.x + threadIdx.x;
-    unsigned int start = tid * 2500;
-    unsigned int end = start + 2500;
+    unsigned int start = tid * 313;
+    unsigned int end = start + 313;
     int count = 0;
-    //TODO Loop unrolling?
-    for (int i = (int) start; i < end; i++) {
+    for (unsigned int i = start; i < end; i++) {
         if (buf[i] == ',' || buf[i] == '\n') {
             count++;
             result[prefixSum[tid] + count] = i;
@@ -96,18 +95,18 @@ __global__ void extractData(const char *buf, const int *fieldsIndex, int *labels
  */
 void loadDataWithGPU(int size, int *labels, float *images, FILE *stream) {
 
+    displayGPUHeader();
+
     clock_t start, stop;
 
     start = clock();
 
-    // Calculate the file size and ceil it to the nearest multiple of 64000
-    // Because I want 64 threads in a block, each parsing 10k characters
     fseek(stream, 0, SEEK_END);
     int file_size;
-    file_size = (int) ceil(ftell(stream) / 320000.0) * 320000;
+    file_size = (int) ceil(ftell(stream) / 320512.0) * 320512;
     rewind(stream);
-    int blockSize = file_size / 320000;
-    int numThreads = 128;
+    int blockSize = file_size / 320512;
+    int numThreads = 1024;
     int totalThreads = blockSize * numThreads;
 
     // Read the file into a buffer
@@ -142,10 +141,7 @@ void loadDataWithGPU(int size, int *labels, float *images, FILE *stream) {
     printf("total delimiters: %d\n", prefix_sum[totalThreads - 1]);
 
     // Third step: fill the fieldsIndex array
-    int *fieldsIndex;
     int numFields = prefix_sum[totalThreads - 1] + 1;
-
-    fieldsIndex = (int *) malloc(numFields * sizeof(int));
 
     //Prepare the device memory
     int *d_prefix_sum;
@@ -153,14 +149,10 @@ void loadDataWithGPU(int size, int *labels, float *images, FILE *stream) {
     cudaMalloc((void **) &d_prefix_sum, totalThreads * sizeof(int));
     cudaMalloc((void **) &d_fieldsIndex, numFields * sizeof(int));
     cudaMemcpy(d_prefix_sum, prefix_sum, totalThreads * sizeof(int), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_fieldsIndex, fieldsIndex, numFields * sizeof(int), cudaMemcpyHostToDevice);
 
     // Run the kernel
     fillFieldsIndexes <<<blockSize, numThreads>>>(d_buffer, d_prefix_sum, d_fieldsIndex);
     CHECK(cudaDeviceSynchronize());
-
-    cudaMemcpy(fieldsIndex, d_fieldsIndex, (prefix_sum[totalThreads - 1] + 1) * sizeof(int),
-               cudaMemcpyDeviceToHost);
 
     // Fourth step: extract the data
     // In the csv we have 60k entries, each entry has 785 fields (784 pixels + 1 label)

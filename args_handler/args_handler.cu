@@ -7,6 +7,7 @@
 #include "args_handler_version.cuh"
 #include "args_extractor.cuh"
 #include "../data/data_loader.cuh"
+#include "../network/init_networks.cuh"
 #include <stdio.h>
 
 
@@ -39,5 +40,7 @@ bool handle(int argc, char **argv) {
     float *images = nullptr;
     loadData(size, labels, images, argMode);
 
+    float *networks = nullptr;
+    initNetworks(networks, 100);
     return true;
 }
