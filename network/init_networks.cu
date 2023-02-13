@@ -7,7 +7,7 @@
 #include "init_networks_utils.cuh"
 
 void initNetworks(float *networks, int count) {
-    networks = (float *) malloc(sizeof(float) * count * 7850);
+    srand(time(NULL));
     clock_t start, stop;
     float max = 0;
     float min = 99;

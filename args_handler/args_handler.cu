@@ -8,6 +8,7 @@
 #include "args_extractor.cuh"
 #include "../data/data_loader.cuh"
 #include "../network/init_networks.cuh"
+#include "../network/fitness_calculator.cuh"
 #include <stdio.h>
 
 
@@ -36,11 +37,17 @@ bool handle(int argc, char **argv) {
         return false;
     }
 
-    int *labels = nullptr;
-    float *images = nullptr;
+    int *labels;
+    float *images;
+    labels = (int *) malloc(size * sizeof(int));
+    images = (float *) malloc(size * 28 * 28 * sizeof(float));
     loadData(size, labels, images, argMode);
 
-    float *networks = nullptr;
+    float *networks;
+    networks = (float *) malloc(sizeof(float) * 100 * 7850);
     initNetworks(networks, 100);
+
+    int *fitness = nullptr;
+    calculateFitness(labels, images, networks, 100, size, fitness, argMode);
     return true;
 }

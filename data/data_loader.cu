@@ -31,8 +31,6 @@ void loadLine(char *line, int *label, float *image, int index) {
 }
 
 void loadData(int size, int *labels, float *images, MODE mode) {
-    labels = (int *) malloc(size * sizeof(int));
-    images = (float *) malloc(size * 28 * 28 * sizeof(float));
     FILE *stream = readFile();
     if (mode == CPU) {
         loadDataWithCPU(size, labels, images, stream);

@@ -7,8 +7,8 @@
 #include <stdio.h>
 
 float randGaussian() {
-    float a = rand() / RAND_MAX;
-    float b = rand() / RAND_MAX;
+    float a = (float) rand() / (float) RAND_MAX;
+    float b = (float) rand() / (float) RAND_MAX;
     if (a == 0) {
         a = 0.0000001;
     }
@@ -18,5 +18,5 @@ float randGaussian() {
 
     float R0 = sqrt(-2.0 * log(a)) * cos(2 * M_PI * b);
 
-    return (R0 / 2) - 1.5f;
+    return R0 / 5;
 }
