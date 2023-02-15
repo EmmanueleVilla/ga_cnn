@@ -15,7 +15,7 @@
  * @param labels: the array to store the labels
  * @param images: the array to store the images
  */
-void loadDataWithCPU(int size, int *labels, float *images, FILE *stream);
+void loadDataWithCPU(int size, int *labels, float *images, FILE *stream, float *networks, int networkCount);
 
 
 #endif //GA_CNN_DATA_LOADER_CPU_CUH

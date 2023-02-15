@@ -30,12 +30,12 @@ void loadLine(char *line, int *label, float *image, int index) {
     }
 }
 
-void loadData(int size, int *labels, float *images, MODE mode) {
+void loadData(int size, int *labels, float *images, MODE mode, float *networks, int networkCount) {
     FILE *stream = readFile();
     if (mode == CPU) {
-        loadDataWithCPU(size, labels, images, stream);
+        loadDataWithCPU(size, labels, images, stream, networks, networkCount);
     } else if (mode == GPU) {
-        loadDataWithGPU(size, labels, images, stream);
+        loadDataWithGPU(size, labels, images, stream, networks, networkCount);
     }
     printData(2, labels, images);
 }

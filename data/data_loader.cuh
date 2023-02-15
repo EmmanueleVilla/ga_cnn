@@ -7,7 +7,7 @@
 
 #include "../args_handler/args_extractor.cuh"
 
-void loadData(int size, int *labels, float *images, MODE mode);
+void loadData(int size, int *labels, float *images, MODE mode, float *networks, int networkCount);
 
 void loadLine(char *line, int *label, float *image, int index);
 

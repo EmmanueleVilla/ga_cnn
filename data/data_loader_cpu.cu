@@ -4,11 +4,12 @@
 
 #include "data_loader_cpu.cuh"
 #include "data_loader.cuh"
+#include "../network/init_networks.cuh"
 #include <stdio.h>
 #include <ctime>
 
-void loadDataWithCPU(int size, int *labels, float *images, FILE *stream) {
-    clock_t start, stop;
+void loadDataWithCPU(int size, int *labels, float *images, FILE *stream, float *networks, int networkCount) {
+    clock_t start, dataLoaded, networkInitialized;
 
     start = clock();
 
@@ -23,8 +24,14 @@ void loadDataWithCPU(int size, int *labels, float *images, FILE *stream) {
         count++;
     }
     fclose(stream);
-    stop = clock();
+    dataLoaded = clock();
 
-    printf("\n%6.3ld", start);
-    printf("\n\n%6.3ld\n", stop);
+    initNetworks(networks, 100);
+
+    networkInitialized = clock();
+
+    printf("** CPU TIMES **\n");
+    printf("Start: \t%6.3ld\n", start);
+    printf("Data loaded:\t %6.3ld\n", dataLoaded);
+    printf("Network init: \t%6.3ld\n", networkInitialized);
 }

@@ -39,14 +39,13 @@ bool handle(int argc, char **argv) {
 
     int *labels;
     float *images;
+    float *networks;
+    networks = (float *) malloc(sizeof(float) * 100 * 7850);
+
     labels = (int *) malloc(size * sizeof(int));
     images = (float *) malloc(size * 28 * 28 * sizeof(float));
 
-    loadData(size, labels, images, argMode);
-
-    float *networks;
-    networks = (float *) malloc(sizeof(float) * 100 * 7850);
-    initNetworks(networks, 100);
+    loadData(size, labels, images, argMode, networks, 100);
 
     int *fitness = nullptr;
     calculateFitness(labels, images, networks, 100, size, fitness, argMode);

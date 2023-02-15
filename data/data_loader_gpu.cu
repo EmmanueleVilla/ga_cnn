@@ -4,6 +4,7 @@
 
 #include "data_loader_gpu.cuh"
 #include "../info/device_info.cuh"
+#include "../network/init_networks.cuh"
 #include <stdio.h>
 #include <ctime>
 
@@ -93,7 +94,7 @@ __global__ void extractData(const char *buf, const int *fieldsIndex, int *labels
  * @param labels: the array to store the labels
  * @param images: the array to store the images
  */
-void loadDataWithGPU(int size, int *labels, float *images, FILE *stream) {
+void loadDataWithGPU(int size, int *labels, float *images, FILE *stream, float *networks, int networkCount) {
 
     displayGPUHeader();
 
@@ -160,6 +161,11 @@ void loadDataWithGPU(int size, int *labels, float *images, FILE *stream) {
 
     // Run the kernel
     fillFieldsIndexes <<<blockSize, numThreads>>>(d_buffer, d_prefix_sum, d_fieldsIndex);
+
+    // This kernel takes around 100ms
+    // so meanwhile I'll do some stuff on the CPU and then wait for the kernel to finish
+    initNetworks(networks, 100);
+
     CHECK(cudaDeviceSynchronize());
 
     // Fourth step: extract the data
