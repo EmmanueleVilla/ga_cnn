@@ -4,13 +4,14 @@
 
 #include <ctime>
 #include "init_networks_utils.cuh"
+#include "init_networks.cuh"
 
 void initNetworks(float *networks, int count) {
     srand(time(NULL));
     for (int i = 0; i < count; i++) {
-        for (int j = 0; j < 7850; j++) {
+        for (int j = 0; j < NUM_WEIGHTS; j++) {
             float rand = randGaussian();
-            networks[i * 7850 + j] = rand;
+            networks[i * NUM_WEIGHTS + j] = rand;
         }
     }
 }

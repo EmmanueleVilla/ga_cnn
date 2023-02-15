@@ -3,6 +3,7 @@
 //
 
 #include "output_utils.cuh"
+#include "../network/init_networks.cuh"
 #include <stdio.h>
 
 void displayImage(const float *image, int size) {
@@ -28,7 +29,7 @@ void displayImage(const float *image, int size) {
 void displayFilter(const float *filters, int networkIndex, int filterIndex) {
     for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 3; j++) {
-            int index = networkIndex * 7850 + filterIndex * 9 + i * 3 + j;
+            int index = networkIndex * NUM_WEIGHTS + filterIndex * 9 + i * 3 + j;
             if (filters[index] > 0.5f) {
                 printf("O");
             } else if (filters[index] > 0.25f) {

@@ -4,6 +4,7 @@
 
 #include "fitness_calculator_cpu.cuh"
 #include "../output/output_utils.cuh"
+#include "init_networks.cuh"
 #include <stdio.h>
 
 int calculateNetworkLabelCPU(
@@ -14,12 +15,12 @@ int calculateNetworkLabelCPU(
 ) {
     int numFilters = 5;
     // Apply convolution filters to images[imageIndex] reading the weights from networks[networkIndex]
-    float *conv = (float *) malloc(sizeof(float) * 26 * 26 * numFilters);
+    auto *conv = (float *) malloc(sizeof(float) * 26 * 26 * numFilters);
     printf("Calculating network %d label for image %d\n", networkIndex, imageIndex);
     int count = 0;
-    float *image = (float *) &images[imageIndex * 28 * 28];
+    auto *image = (float *) &images[imageIndex * 28 * 28];
     displayImage(image, 28);
-    float *network = (float *) &networks[networkIndex * 7850];
+    auto *network = (float *) &networks[networkIndex * NUM_WEIGHTS];
 
     for (int filter = 0; filter < numFilters; filter++) {
         printf("Filter %d\n", filter);
@@ -39,13 +40,13 @@ int calculateNetworkLabelCPU(
     }
 
     for (int i = 0; i < numFilters; i++) {
-        float *convoluted = (float *) &conv[i * 26 * 26];
+        auto *convoluted = (float *) &conv[i * 26 * 26];
         printf("Convolution result\n");
         displayImage(convoluted, 26);
     }
 
     // Apply max pooling
-    float *pooled = (float *) malloc(sizeof(float) * 13 * 13 * numFilters);
+    auto *pooled = (float *) malloc(sizeof(float) * 13 * 13 * numFilters);
 
     count = 0;
     for (int filter = 0; filter < numFilters; filter++) {
@@ -68,12 +69,15 @@ int calculateNetworkLabelCPU(
     }
 
     for (int i = 0; i < numFilters; i++) {
-        float *pool = (float *) &pooled[i * 13 * 13];
+        auto *pool = (float *) &pooled[i * 13 * 13];
         printf("Pooling result\n");
         displayImage(pool, 13);
     }
 
-    // Calculate dense layer
+    free(conv);
+    free(pooled);
+
+    // Calculate dense layer (845 x 10 output)
     // Return the label with the highest value
     return 5;
 }

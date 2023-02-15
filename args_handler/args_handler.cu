@@ -40,7 +40,7 @@ bool handle(int argc, char **argv) {
     int *labels;
     float *images;
     float *networks;
-    networks = (float *) malloc(sizeof(float) * 100 * 7850);
+    networks = (float *) malloc(sizeof(float) * 100 * NUM_WEIGHTS);
 
     labels = (int *) malloc(size * sizeof(int));
     images = (float *) malloc(size * 28 * 28 * sizeof(float));
