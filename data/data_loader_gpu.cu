@@ -110,7 +110,9 @@ void loadDataWithGPU(int size, int *labels, float *images, FILE *stream) {
     int totalThreads = blockSize * numThreads;
 
     // Read the file into a buffer
-    char *buffer = (char *) malloc(sizeof(char) * file_size);
+    char *buffer;
+    // since buffer is very big, we need to allocate it in the pinned memory
+    cudaMallocHost(&buffer, sizeof(char) * file_size);
     fread(buffer, 1, file_size, stream);
     fclose(stream);
 
@@ -118,6 +120,9 @@ void loadDataWithGPU(int size, int *labels, float *images, FILE *stream) {
     char *d_buffer;
     cudaMalloc((void **) &d_buffer, file_size * sizeof(char));
     cudaMemcpy(d_buffer, buffer, file_size * sizeof(char), cudaMemcpyHostToDevice);
+
+    // Free the buffer from host memory
+    cudaFreeHost(buffer);
 
     // Create result buffers
     int *delimiters;
@@ -139,6 +144,9 @@ void loadDataWithGPU(int size, int *labels, float *images, FILE *stream) {
         prefix_sum[i] = prefix_sum[i - 1] + delimiters[i - 1];
     }
     printf("total delimiters: %d\n", prefix_sum[totalThreads - 1]);
+
+    // Free the delimiters array
+    free(delimiters);
 
     // Third step: fill the fieldsIndex array
     int numFields = prefix_sum[totalThreads - 1] + 1;
@@ -171,6 +179,12 @@ void loadDataWithGPU(int size, int *labels, float *images, FILE *stream) {
 
     cudaMemcpy(labels, d_labels, size * sizeof(int), cudaMemcpyDeviceToHost);
     cudaMemcpy(images, d_images, size * 784 * sizeof(float), cudaMemcpyDeviceToHost);
+
+    // Free the device memory
+    cudaFree(d_buffer);
+    cudaFree(d_prefix_sum);
+    cudaFree(d_delimiters);
+    cudaFree(d_fieldsIndex);
 
     stop = clock();
     printf("\nstart: %6.3ld\n", start);

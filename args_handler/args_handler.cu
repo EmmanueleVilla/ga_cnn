@@ -41,6 +41,7 @@ bool handle(int argc, char **argv) {
     float *images;
     labels = (int *) malloc(size * sizeof(int));
     images = (float *) malloc(size * 28 * 28 * sizeof(float));
+
     loadData(size, labels, images, argMode);
 
     float *networks;
