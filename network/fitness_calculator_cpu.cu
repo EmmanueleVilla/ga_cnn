@@ -16,15 +16,14 @@ int calculateNetworkLabelCPU(
     int numFilters = 5;
     // Apply convolution filters to images[imageIndex] reading the weights from networks[networkIndex]
     auto *conv = (float *) malloc(sizeof(float) * 26 * 26 * numFilters);
-    printf("Calculating network %d label for image %d\n", networkIndex, imageIndex);
     int count = 0;
     auto *image = (float *) &images[imageIndex * 28 * 28];
-    displayImage(image, 28);
+    //displayImage(image, 28);
     auto *network = (float *) &networks[networkIndex * NUM_WEIGHTS];
 
     for (int filter = 0; filter < numFilters; filter++) {
-        printf("Filter %d\n", filter);
-        displayFilter(networks, networkIndex, filter);
+        //printf("Filter %d\n", filter);
+        //displayFilter(networks, networkIndex, filter);
         for (int i = 1; i < 27; i++) {
             for (int j = 1; j < 27; j++) {
                 float sum = 0;
@@ -41,8 +40,8 @@ int calculateNetworkLabelCPU(
 
     for (int i = 0; i < numFilters; i++) {
         auto *convoluted = (float *) &conv[i * 26 * 26];
-        printf("Convolution result\n");
-        displayImage(convoluted, 26);
+        //printf("Convolution result\n");
+        //displayImage(convoluted, 26);
     }
 
     // Apply max pooling
@@ -50,7 +49,7 @@ int calculateNetworkLabelCPU(
 
     count = 0;
     for (int filter = 0; filter < numFilters; filter++) {
-        printf("Pooling\n");
+        //printf("Pooling\n");
         for (int i = 1; i < 26; i += 2) {
             for (int j = 1; j < 26; j += 2) {
                 float max = 0;
@@ -70,16 +69,30 @@ int calculateNetworkLabelCPU(
 
     for (int i = 0; i < numFilters; i++) {
         auto *pool = (float *) &pooled[i * 13 * 13];
-        printf("Pooling result\n");
-        displayImage(pool, 13);
+        //printf("Pooling result\n");
+        //displayImage(pool, 13);
+    }
+
+    // Calculate dense layer
+    auto *output = (float *) malloc(sizeof(float) * 10);
+    int max = -999;
+    for (int i = 0; i < 10; i++) {
+        float sum = 0;
+        for (int j = 0; j < 13 * 13; j++) {
+            sum += pooled[i * 13 * 13 + j] * network[45 + i * 13 * 13 + j];
+        }
+        output[i] = sum;
+        if (sum > max || max == -999) {
+            max = i;
+        }
     }
 
     free(conv);
     free(pooled);
+    free(output);
 
-    // Calculate dense layer (845 x 10 output)
     // Return the label with the highest value
-    return 5;
+    return max;
 }
 
 float calculateFitnessCPUSingleNetwork(
@@ -89,7 +102,7 @@ float calculateFitnessCPUSingleNetwork(
         int dataCount,
         int netWorkIndex
 ) {
-    printf("Calculating fitness of network %d\n", netWorkIndex);
+    //printf("Calculating fitness of network %d\n", netWorkIndex);
     int correct = 0;
     for (int i = 0; i < dataCount; i++) {
         int label = labels[i];
@@ -97,7 +110,6 @@ float calculateFitnessCPUSingleNetwork(
         if (label == networkLabel) {
             correct++;
         }
-        break;
     }
     return ((float) correct / (float) dataCount * 100);
 }
@@ -115,7 +127,6 @@ void calculateFitnessCPU(
     for (int i = 0; i < networkCount; i++) {
         fitness[i] = calculateFitnessCPUSingleNetwork(labels, images, networks, dataCount, i);
         printf("Fitness of network %d: %f\n", i, fitness[i]);
-        break;
     }
 }
 
