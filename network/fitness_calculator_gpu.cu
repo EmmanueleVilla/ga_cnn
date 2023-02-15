@@ -5,6 +5,6 @@
 #include "fitness_calculator_gpu.cuh"
 
 void calculateFitnessGPU(const int *labels, const float *images, const float *networks, int networkCount, int dataCount,
-                         int *fitness) {
+                         float *fitness) {
 
 }

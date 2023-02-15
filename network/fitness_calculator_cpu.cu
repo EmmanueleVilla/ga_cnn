@@ -35,7 +35,7 @@ int calculateNetworkLabelCPU(
     return 5;
 }
 
-int calculateFitnessCPUSingleNetwork(
+float calculateFitnessCPUSingleNetwork(
         const int *labels,
         const float *images,
         const float *networks,
@@ -52,7 +52,7 @@ int calculateFitnessCPUSingleNetwork(
         }
         break;
     }
-    return (int) ((float) correct / (float) dataCount * 100);
+    return ((float) correct / (float) dataCount * 100);
 }
 
 
@@ -62,12 +62,12 @@ void calculateFitnessCPU(
         const float *networks,
         int networkCount,
         int dataCount,
-        int *fitness
+        float *fitness
 ) {
     printf("Calculating fitness on CPU\n");
     for (int i = 0; i < networkCount; i++) {
         fitness[i] = calculateFitnessCPUSingleNetwork(labels, images, networks, dataCount, i);
-        printf("Fitness of network %d: %d\n", i, fitness[i]);
+        printf("Fitness of network %d: %f\n", i, fitness[i]);
         break;
     }
 }

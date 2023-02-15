@@ -45,9 +45,11 @@ bool handle(int argc, char **argv) {
     labels = (int *) malloc(size * sizeof(int));
     images = (float *) malloc(size * 28 * 28 * sizeof(float));
 
+    // Load data also initialize the network weights
+    // Because the GPU load parallelize it with the CPU
     loadData(size, labels, images, argMode, networks, 100);
 
-    int *fitness = nullptr;
+    float *fitness = nullptr;
     calculateFitness(labels, images, networks, 100, size, fitness, argMode);
     return true;
 }
