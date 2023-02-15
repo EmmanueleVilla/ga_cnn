@@ -164,7 +164,7 @@ void loadDataWithGPU(int size, int *labels, float *images, FILE *stream, float *
 
     // This kernel takes around 100ms
     // so meanwhile I'll do some stuff on the CPU and then wait for the kernel to finish
-    initNetworks(networks, 100);
+    initNetworks(networks, networkCount);
 
     CHECK(cudaDeviceSynchronize());
 

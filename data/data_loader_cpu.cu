@@ -25,7 +25,7 @@ void loadDataWithCPU(int size, int *labels, float *images, FILE *stream, float *
     fclose(stream);
     dataLoaded = clock();
 
-    initNetworks(networks, 100);
+    initNetworks(networks, networkCount);
 
     networkInitialized = clock();
 

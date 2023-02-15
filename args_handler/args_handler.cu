@@ -9,8 +9,9 @@
 #include "../data/data_loader.cuh"
 #include "../network/init_networks.cuh"
 #include "../network/fitness_calculator.cuh"
+#include "../genetic/evolve_population.cuh"
 #include <stdio.h>
-
+#include <ctime>
 
 bool handle(int argc, char **argv) {
     if (argc == 2 && (strcmp("--help", argv[1]) == 0 || strcmp("-h", argv[1]) == 0)) {
@@ -25,7 +26,8 @@ bool handle(int argc, char **argv) {
 
     enum MODE argMode = NONE;
     int size = -1;
-    extractArgs(argc, argv, argMode, size);
+    int populationSize = -1;
+    extractArgs(argc, argv, argMode, size, populationSize);
 
     if (argMode == NONE) {
         printf("Mode not set. Use --mode or -m to set the mode.\n");
@@ -33,23 +35,50 @@ bool handle(int argc, char **argv) {
     }
 
     if (size < 1 || size > 60000) {
-        printf("Size not set or invalid. Must be between 1 and 60000. Use --size or -s to set the size.\n");
+        printf("Data size not set or invalid. Must be between 1 and 60000. Use --dataSize or -s to set the size.\n");
+        return false;
+    }
+
+    if (populationSize < 1) {
+        printf("Population size not set or invalid. Must be a positive number. Use --popSize or -p to set the size.\n");
         return false;
     }
 
     int *labels;
     float *images;
     float *networks;
-    networks = (float *) malloc(sizeof(float) * 100 * NUM_WEIGHTS);
+    networks = (float *) malloc(sizeof(float) * populationSize * NUM_WEIGHTS);
 
     labels = (int *) malloc(size * sizeof(int));
     images = (float *) malloc(size * 28 * 28 * sizeof(float));
 
     // Load data also initialize the network weights
     // Because the GPU load parallelize it with the CPU
-    loadData(size, labels, images, argMode, networks, 100);
+    loadData(size, labels, images, argMode, networks, populationSize);
 
-    float *fitness = nullptr;
-    calculateFitness(labels, images, networks, 100, size, fitness, argMode);
+    clock_t start, end;
+
+    start = clock();
+
+    auto *fitness = (float *) malloc(sizeof(float) * populationSize);
+
+    float maxFitness = 0;
+
+    while (maxFitness < 95) {
+        calculateFitness(labels, images, networks, populationSize, size, fitness, argMode);
+        evolve(networks, fitness, populationSize, argMode);
+        //get max fitness
+        for (int i = 0; i < populationSize; i++) {
+            if (fitness[i] > maxFitness) {
+                maxFitness = fitness[i];
+            }
+        }
+        printf("Max fitness: %f\n", maxFitness);
+    }
+
+    end = clock();
+
+    printf("Start fitness: \t%6.3ld\n", start);
+    printf("End:\t %6.3ld\n", end);
     return true;
 }

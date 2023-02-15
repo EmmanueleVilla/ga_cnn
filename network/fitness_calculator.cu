@@ -13,7 +13,7 @@ void calculateFitness(int *labels,
                       int dataCount,
                       float *fitness,
                       MODE mode) {
-    fitness = (float *) malloc(sizeof(float) * networkCount);
+
     if (mode == CPU) {
         calculateFitnessCPU(labels, images, networks, networkCount, dataCount, fitness);
     } else {

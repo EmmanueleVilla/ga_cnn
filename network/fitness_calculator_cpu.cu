@@ -123,10 +123,10 @@ void calculateFitnessCPU(
         int dataCount,
         float *fitness
 ) {
-    printf("Calculating fitness on CPU\n");
+    //printf("Calculating fitness on CPU\n");
     for (int i = 0; i < networkCount; i++) {
         fitness[i] = calculateFitnessCPUSingleNetwork(labels, images, networks, dataCount, i);
-        printf("Fitness of network %d: %f\n", i, fitness[i]);
+        //printf("Fitness of network %d: %f\n", i, fitness[i]);
     }
 }
 
