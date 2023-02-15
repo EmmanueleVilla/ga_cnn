@@ -45,6 +45,34 @@ int calculateNetworkLabelCPU(
     }
 
     // Apply max pooling
+    float *pooled = (float *) malloc(sizeof(float) * 13 * 13 * numFilters);
+
+    count = 0;
+    for (int filter = 0; filter < numFilters; filter++) {
+        printf("Pooling\n");
+        for (int i = 1; i < 26; i += 2) {
+            for (int j = 1; j < 26; j += 2) {
+                float max = 0;
+                for (int k = 0; k < 2; k++) {
+                    for (int l = 0; l < 2; l++) {
+                        float value = conv[filter * 26 * 26 + (i + k - 1) * 26 + (j + l - 1)];
+                        if (value > max) {
+                            max = value;
+                        }
+                    }
+                }
+                pooled[count] = max;
+                count++;
+            }
+        }
+    }
+
+    for (int i = 0; i < numFilters; i++) {
+        float *pool = (float *) &pooled[i * 13 * 13];
+        printf("Pooling result\n");
+        displayImage(pool, 13);
+    }
+
     // Calculate dense layer
     // Return the label with the highest value
     return 5;
