@@ -12,21 +12,36 @@ int calculateNetworkLabelCPU(
         int networkIndex,
         int imageIndex
 ) {
+    int numFilters = 5;
     // Apply convolution filters to images[imageIndex] reading the weights from networks[networkIndex]
-    float *conv = (float *) malloc(sizeof(float) * 26 * 26);
+    float *conv = (float *) malloc(sizeof(float) * 26 * 26 * numFilters);
     printf("Calculating network %d label for image %d\n", networkIndex, imageIndex);
     int count = 0;
-    displayImage(images, imageIndex);
+    float *image = (float *) &images[imageIndex * 28 * 28];
+    displayImage(image, 28);
+    float *network = (float *) &networks[networkIndex * 7850];
 
-    for (int filter = 0; filter < 5; filter++) {
+    for (int filter = 0; filter < numFilters; filter++) {
         printf("Filter %d\n", filter);
         displayFilter(networks, networkIndex, filter);
         for (int i = 1; i < 27; i++) {
             for (int j = 1; j < 27; j++) {
-                int filterIndex = filter * 9;
-                conv[count] = 0;
+                float sum = 0;
+                for (int k = 0; k < 3; k++) {
+                    for (int l = 0; l < 3; l++) {
+                        sum += image[(i + k - 1) * 28 + (j + l - 1)] * network[filter * 9 + k * 3 + l];
+                    }
+                }
+                conv[count] = sum;
+                count++;
             }
         }
+    }
+
+    for (int i = 0; i < numFilters; i++) {
+        float *convoluted = (float *) &conv[i * 26 * 26];
+        printf("Convolution result\n");
+        displayImage(convoluted, 26);
     }
 
     // Apply max pooling

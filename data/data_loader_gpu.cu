@@ -82,7 +82,7 @@ __global__ void extractData(const char *buf, const int *fieldsIndex, int *labels
     if (threadIdx.x == 0) {
         labels[blockIdx.x] = res;
     } else {
-        images[threadIdx.x + 784 * blockIdx.x] = ((float) res) / 255.0f;
+        images[threadIdx.x + 784 * blockIdx.x] = ((float) res) / 255.0f - 0.5f;
     }
 }
 

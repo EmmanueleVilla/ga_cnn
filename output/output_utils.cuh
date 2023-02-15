@@ -6,7 +6,7 @@
 #define GA_CNN_OUTPUT_UTILS_CUH
 
 
-void displayImage(const float *image, int index);
+void displayImage(const float *image, int size);
 
 void displayFilter(const float *filters, int networkIndex, int filterIndex);
 

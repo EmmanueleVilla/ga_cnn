@@ -22,7 +22,7 @@ void loadLine(char *line, int *label, float *image, int index) {
         if (count == 0) {
             label[index] = cell;
         } else {
-            float pixel = (float) cell / 255.0f;
+            float pixel = (float) cell / 255.0f - 0.5f;
             image[index * 28 * 28 + count - 1] = pixel;
         }
         count++;

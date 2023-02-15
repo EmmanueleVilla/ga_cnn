@@ -5,15 +5,17 @@
 #include "output_utils.cuh"
 #include <stdio.h>
 
-void displayImage(const float *images, int imageIndex) {
-    for (int i = 1; i < 27; i++) {
-        for (int j = 1; j < 27; j++) {
-            int index = imageIndex * 28 * 28 + i * 28 + j;
-            if (images[index] > 0.85f) {
+void displayImage(const float *image, int size) {
+    for (int i = 0; i < size; i++) {
+        for (int j = 0; j < size; j++) {
+            int index = i * size + j;
+            if (image[index] > 0.5f) {
                 printf("X");
-            } else if (images[index] > 0.75f) {
+            } else if (image[index] > 0.25f) {
                 printf("x");
-            } else if (images[index] > 0.5f) {
+            } else if (image[index] > -0.25f) {
+                printf(",");
+            } else if (image[index] > -0.5f) {
                 printf(".");
             } else {
                 printf(" ");

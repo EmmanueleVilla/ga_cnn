@@ -19,7 +19,6 @@ void loadDataWithCPU(int size, int *labels, float *images, FILE *stream, float *
         if (count == size) {
             break;
         }
-        //printf("Read line #%d: %s\n", count, line);
         loadLine(line, labels, images, count);
         count++;
     }
