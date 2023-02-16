@@ -37,6 +37,8 @@ __global__ void calculateConvolutionGPU(
 
     float sum = 0;
 
+    //TODO: merge convolution and pooling to get rid of the __shared__ float conv[CONV_IMAGE_SIZE]; variable
+
     // --- CONVOLUTION ---
 
     int start = filter * 9;
@@ -167,6 +169,8 @@ void calculateFitnessGPU(
     dim3 grid(dataCount, networkCount, NUM_FILTERS);
 
     // 1 block = 1 network with 1 input image, 26x26 threads
+    // To be able to sync the numFilters and avoid saving the conv in shared memory,
+    // I could launch 13x13x5 threads, so < 1024
     dim3 block(26, 26);
 
     calculateConvolutionGPU<<<grid, block>>>(d_images, d_networks);
