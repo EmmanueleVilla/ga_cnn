@@ -214,8 +214,7 @@ __global__ void calculateConvolutionGPU(
         // finally, maxIndex is the prediction of this network for this image!
         // if it's correct, I increment the fitness of this network using an atomic operation
         if (maxIndex == labels[networkIndex]) {
-            fitness[networkIndex] += 1;
-            //atomicAdd(&fitness[networkIndex], 1);
+            atomicAdd(&fitness[networkIndex], 1);
         }
     }
 }
