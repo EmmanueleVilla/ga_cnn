@@ -25,13 +25,19 @@ __global__ void calculateConvolutionGPU(
     __shared__ float maxPooled[POOLED_SIZE];
     //__shared__ float output[OUTPUT_PER_FILTER];
 
-    // copy the image to the block shared memory
-    image[threadIdx.x * 28 + threadIdx.y] = images[imageIndex * 28 * 28 + threadIdx.x * 28 + threadIdx.y];
+    int tid = threadIdx.x * blockDim.x + threadIdx.y * blockDim.y + threadIdx.z;
+    if (tid < 28 * 28) {
+        image[tid] = images[imageIndex * 28 * 28 + tid];
+    }
 
-    // copy the network to the block shared memory
-    int weightIndex = blockIdx.x;
-    if (weightIndex < NUM_WEIGHTS) {
-        network[weightIndex] = networks[networkIndex * NUM_WEIGHTS + weightIndex];
+    // there are 8495 weights to be copied
+    // I have 845 threads per block
+    // so each thread will copy 11 weights
+    for (int w_i = 0; w_i < 11; w_i++) {
+        int w = threadIdx.x * blockDim.x + threadIdx.y * blockDim.y + threadIdx.z * blockDim.z + w_i;
+        if (w < NUM_WEIGHTS) {
+            network[w] = networks[networkIndex * NUM_WEIGHTS + w];
+        }
     }
 
     __syncthreads();
@@ -178,9 +184,6 @@ __global__ void calculateConvolutionGPU(
 
         //printf("Label is %d\n", labels[imageIndex]);
         if (max == labels[imageIndex]) {
-            if (max != 0) {
-                printf("Found correct label: %f\n", max);
-            }
             atomicAdd(&fitness[networkIndex], 1.0f / 60000.0f);
         }
     }
