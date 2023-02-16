@@ -87,7 +87,7 @@ void calculateFitnessGPU(
     dim3 grid(dataCount, networkCount);
 
     // 1 block = 1 network with 1 input image, 26x26xFILTER_SIZE threads
-    dim3 block(26, 26, FILTER_SIZE);
+    dim3 block(26, 26, NUM_FILTERS);
 
     calculateConvolutionGPU<<<grid, block>>>(d_images, d_networks);
 
