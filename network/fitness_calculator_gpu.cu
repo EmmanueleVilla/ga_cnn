@@ -14,9 +14,9 @@ __global__ void calculateConvolutionGPU(
 ) {
     int imageIndex = blockIdx.x;
     int networkIndex = blockIdx.y;
-    int filter = blockIdx.z;
     int i = threadIdx.x + 1;
     int j = threadIdx.y + 1;
+    int filter = threadIdx.z;
 
     __shared__ float image[IMAGE_INPUT_SIZE];
     __shared__ float network[NUM_WEIGHTS];
@@ -35,30 +35,43 @@ __global__ void calculateConvolutionGPU(
 
     __syncthreads();
 
-    float sum = 0;
+    // To avoid saving partial values in memory, I merge the convolution, pooling and output steps.
+    // The thread i, j will take care of calculating the convolution of the 4 pixels:
+    // (i, j), (i+1, j), (i, j+1), (i+1, j+1)
+    // and then it will take only the maximum value
 
-    //TODO: merge convolution and pooling to get rid of the __shared__ float conv[CONV_IMAGE_SIZE]; variable
+    float pooled = 0;
 
-    // --- CONVOLUTION ---
+    // maybe loop unrolling
+    for (int x = i; x < i + 2; x++) {
+        for (int y = j; y < j + 2; y++) {
+            int start = filter * 9;
+            int i_1 = (x - 1) * 28;
+            int i_2 = x * 28;
+            int i_3 = (x + 1) * 28;
 
-    int start = filter * 9;
-    int i_1 = (i - 1) * 28;
-    int j_1 = j - 1;
-    int i_2 = i * 28;
-    int i_3 = (i + 1) * 28;
-    int j_3 = j + 1;
-    sum += image[i_1 + j_1] * network[start];
-    sum += image[i_1 + j] * network[start + 1];
-    sum += image[i_1 + j_3] * network[start + 2];
+            int j_1 = y - 1;
+            int j_2 = y;
+            int j_3 = y + 1;
+            float sum = 0;
+            sum += image[i_1 + j_1] * network[start];
+            sum += image[i_1 + j_2] * network[start + 1];
+            sum += image[i_1 + j_3] * network[start + 2];
 
-    sum += image[i_2 + j_1] * network[start + 3];
-    sum += image[i_2 + j] * network[start + 4];
-    sum += image[i_2 + j_3] * network[start + 5];
+            sum += image[i_2 + j_1] * network[start + 3];
+            sum += image[i_2 + j_2] * network[start + 4];
+            sum += image[i_2 + j_3] * network[start + 5];
 
-    sum += image[i_3 + j_1] * network[start + 6];
-    sum += image[i_3 + j] * network[start + 7];
-    sum += image[i_3 + j_3] * network[start + 8];
+            sum += image[i_3 + j_1] * network[start + 6];
+            sum += image[i_3 + j_2] * network[start + 7];
+            sum += image[i_3 + j_3] * network[start + 8];
+            if (sum > pooled) {
+                pooled = sum;
+            }
+        }
+    }
 
+    /*
     // can I avoid this access?
     conv[i * 26 + j * 26] = sum;
 
@@ -141,6 +154,7 @@ __global__ void calculateConvolutionGPU(
 
         // finally, maxIndex is the prediction of this network for this image!
     }
+     */
 }
 
 void calculateFitnessGPU(
@@ -171,7 +185,7 @@ void calculateFitnessGPU(
     // 1 block = 1 network with 1 input image, 26x26 threads
     // To be able to sync the numFilters and avoid saving the conv in shared memory,
     // I could launch 13x13x5 threads, so < 1024
-    dim3 block(26, 26);
+    dim3 block(13, 13, NUM_FILTERS);
 
     calculateConvolutionGPU<<<grid, block>>>(d_images, d_networks);
 
