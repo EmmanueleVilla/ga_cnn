@@ -5,9 +5,9 @@
 #include "evolve_population_cpu.cuh"
 #include "../network/init_networks.cuh"
 #include "../network/init_networks_utils.cuh"
+#include "../defines.cuh"
 #include <stdio.h>
 
-#define TOURNAMENT_SIZE 10
 
 int tournamentSelection(const float *fitness, int popSize) {
     int parent = rand() % popSize;
@@ -20,21 +20,39 @@ int tournamentSelection(const float *fitness, int popSize) {
     return parent;
 }
 
+int my_min(int a, int b) {
+    return a < b ? a : b;
+}
+
+int my_max(int a, int b) {
+    return a > b ? a : b;
+}
+
+
 float *crossover(const float *parent1, const float *parent2, bool *mask) {
     float *child = new float[NUM_WEIGHTS];
-    for (int i = 0; i < NUM_WEIGHTS; i++) {
-        if (mask[i]) {
-            child[i] = parent1[i];
-        } else {
-            child[i] = parent2[i];
-        }
+
+    int first = rand() % NUM_WEIGHTS;
+    int second = rand() % NUM_WEIGHTS;
+    int third = rand() % NUM_WEIGHTS;
+
+    int start = my_min(first, my_min(second, third));
+    int end = my_max(first, my_max(second, third));
+    for (int i = 0; i < start; i++) {
+        child[i] = parent1[i];
     }
-    // try to mutate 50 times
-    for (int i = 0; i < 50; i++) {
-        if (rand() % 100 < 1) {
-            int index = rand() % NUM_WEIGHTS;
-            child[index] = randGaussian();
-        }
+    for (int i = start; i < end; i++) {
+        child[i] = parent2[i];
+    }
+    for (int i = end; i < NUM_WEIGHTS; i++) {
+        child[i] = parent1[i];
+    }
+
+    //random number between 0 and 10
+    int random = rand() % 10;
+    for (int i = 0; i < random; i++) {
+        int index = rand() % NUM_WEIGHTS;
+        child[index] = randGaussian();
     }
     return child;
 }

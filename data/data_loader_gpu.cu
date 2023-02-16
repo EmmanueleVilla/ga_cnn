@@ -5,18 +5,10 @@
 #include "data_loader_gpu.cuh"
 #include "../info/device_info.cuh"
 #include "../network/init_networks.cuh"
+#include "../defines.cuh"
 #include <stdio.h>
 #include <ctime>
 
-
-#define CHECK(call) {\
-    const cudaError_t error = call;\
-    if (error != cudaSuccess) {\
-        printf("Error: %s:%d, ", __FILE__, __LINE__);\
-        printf("code: %d, reason: %s\n", error, cudaGetErrorString(error));\
-        exit(1);\
-    }\
-}
 
 int atoi(char string[]);
 
@@ -112,7 +104,7 @@ void loadDataWithGPU(int size, int *labels, float *images, FILE *stream, float *
 
     // Read the file into a buffer
     char *buffer;
-    // since buffer is very big, we need to allocate it in the pinned memory
+    // since buffer is very big, we allocate it in the pinned memory
     cudaMallocHost(&buffer, sizeof(char) * file_size);
     fread(buffer, 1, file_size, stream);
     fclose(stream);
@@ -120,7 +112,7 @@ void loadDataWithGPU(int size, int *labels, float *images, FILE *stream, float *
     // Copy buffer to the device
     char *d_buffer;
     cudaMalloc((void **) &d_buffer, file_size * sizeof(char));
-    cudaMemcpy(d_buffer, buffer, file_size * sizeof(char), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_buffer, buffer, file_size * sizeof(char), H2D);
 
     // Free the buffer from host memory
     cudaFreeHost(buffer);
@@ -135,7 +127,7 @@ void loadDataWithGPU(int size, int *labels, float *images, FILE *stream, float *
     countDelimiters <<<blockSize, numThreads>>>(d_buffer, d_delimiters);
     CHECK(cudaDeviceSynchronize());
 
-    cudaMemcpy(delimiters, d_delimiters, totalThreads * sizeof(int), cudaMemcpyDeviceToHost);
+    cudaMemcpy(delimiters, d_delimiters, totalThreads * sizeof(int), D2H);
 
     // Second step: calculate the prefix sum of the delimiters (on the CPU because I think it won't change much)
     int *prefix_sum;
@@ -157,7 +149,7 @@ void loadDataWithGPU(int size, int *labels, float *images, FILE *stream, float *
     int *d_fieldsIndex;
     cudaMalloc((void **) &d_prefix_sum, totalThreads * sizeof(int));
     cudaMalloc((void **) &d_fieldsIndex, numFields * sizeof(int));
-    cudaMemcpy(d_prefix_sum, prefix_sum, totalThreads * sizeof(int), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_prefix_sum, prefix_sum, totalThreads * sizeof(int), H2D);
 
     // Run the kernel
     fillFieldsIndexes <<<blockSize, numThreads>>>(d_buffer, d_prefix_sum, d_fieldsIndex);
@@ -183,8 +175,8 @@ void loadDataWithGPU(int size, int *labels, float *images, FILE *stream, float *
     extractData <<<numBlocks, numThreads>>>(d_buffer, d_fieldsIndex, d_labels, d_images, numFields);
     CHECK(cudaDeviceSynchronize());
 
-    cudaMemcpy(labels, d_labels, size * sizeof(int), cudaMemcpyDeviceToHost);
-    cudaMemcpy(images, d_images, size * 784 * sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(labels, d_labels, size * sizeof(int), D2H);
+    cudaMemcpy(images, d_images, size * 784 * sizeof(float), D2H);
 
     // Free the device memory
     cudaFree(d_buffer);

@@ -5,6 +5,7 @@
 #include <ctime>
 #include "init_networks_utils.cuh"
 #include "init_networks.cuh"
+#include "../defines.cuh"
 
 void initNetworks(float *networks, int count) {
     srand(time(NULL));

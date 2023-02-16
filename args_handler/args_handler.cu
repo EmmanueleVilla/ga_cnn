@@ -64,21 +64,19 @@ bool handle(int argc, char **argv) {
 
     float maxFitness = 0;
 
+    int generation = 0;
+    printf("Start fitness: \t%6.3ld\n", start);
     while (maxFitness < 95) {
+        start = clock();
         calculateFitness(labels, images, networks, populationSize, size, fitness, argMode);
         evolve(networks, fitness, populationSize, argMode);
-        //get max fitness
         for (int i = 0; i < populationSize; i++) {
             if (fitness[i] > maxFitness) {
                 maxFitness = fitness[i];
             }
         }
-        printf("Max fitness: %f\n", maxFitness);
+        printf("%d) Max fitness: %f, generation time: %6.3ld\n", generation++, maxFitness, clock() - start);
     }
 
-    end = clock();
-
-    printf("Start fitness: \t%6.3ld\n", start);
-    printf("End:\t %6.3ld\n", end);
     return true;
 }
