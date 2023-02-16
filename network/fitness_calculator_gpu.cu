@@ -16,7 +16,7 @@ __global__ void calculateConvolutionGPU(
     int networkIndex = blockIdx.y;
     int i = threadIdx.x + 1;
     int j = threadIdx.y + 1;
-    int filter = threadIdx.z;
+    int filter = blockIdx.z;
 
     __shared__ float image[IMAGE_INPUT_SIZE];
     __shared__ float network[NUM_WEIGHTS];
@@ -57,7 +57,9 @@ __global__ void calculateConvolutionGPU(
     int count = i * 26 + j * 26;
 
     conv[count] = sum;
-
+    if (conv[count] != 0) {
+        printf("conv[%d] = %f\n", count, sum);
+    }
     __syncthreads();
 }
 
@@ -84,10 +86,10 @@ void calculateFitnessGPU(
     cudaMemcpy(d_labels, labels, dataCount * sizeof(int), H2D);
 
     // grid = data and network indexes
-    dim3 grid(dataCount, networkCount);
+    dim3 grid(dataCount, networkCount, NUM_FILTERS);
 
     // 1 block = 1 network with 1 input image, 26x26xFILTER_SIZE threads
-    dim3 block(26, 26, NUM_FILTERS);
+    dim3 block(26, 26);
 
     calculateConvolutionGPU<<<grid, block>>>(d_images, d_networks);
 
