@@ -7,9 +7,9 @@
 #include "evolve_population_gpu.cuh"
 
 void evolve(float *networks, float *fitness, int popSize, MODE mode) {
-    if (mode == CPU) {
-        evolveCPU(networks, fitness, popSize);
-    } else {
-        evolveGPU(networks, fitness, popSize);
-    }
+    //if (mode == CPU) {
+    evolveCPU(networks, fitness, popSize);
+    //} else {
+    //    evolveGPU(networks, fitness, popSize);
+    //}
 }

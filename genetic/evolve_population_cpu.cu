@@ -30,7 +30,7 @@ int my_max(int a, int b) {
 
 
 float *crossover(const float *parent1, const float *parent2, bool *mask) {
-    float *child = new float[NUM_WEIGHTS];
+    auto *child = new float[NUM_WEIGHTS];
 
     int first = rand() % NUM_WEIGHTS;
     int second = rand() % NUM_WEIGHTS;
@@ -48,8 +48,8 @@ float *crossover(const float *parent1, const float *parent2, bool *mask) {
         child[i] = parent1[i];
     }
 
-    //random number between 0 and 10
-    int random = rand() % 10;
+    // random number between 0 and 50
+    int random = rand() % 50;
     for (int i = 0; i < random; i++) {
         int index = rand() % NUM_WEIGHTS;
         child[index] = randGaussian();

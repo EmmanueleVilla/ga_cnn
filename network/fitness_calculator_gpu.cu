@@ -167,7 +167,7 @@ __global__ void calculateConvolutionGPU(
     __syncthreads();
 
     // Only one thread per block is responsible to sum
-    if (i == 1 && j == 1) {
+    if (threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == 0) {
         float results[10];
         int maxIndex = 0;
         results[0] = output[0] + output[10 + 0] + output[20 + 0] + output[30 + 0] + output[40 + 0];
@@ -214,7 +214,7 @@ __global__ void calculateConvolutionGPU(
         // finally, maxIndex is the prediction of this network for this image!
         // if it's correct, I increment the fitness of this network using an atomic operation
         if (maxIndex == labels[networkIndex]) {
-            atomicAdd(&fitness[networkIndex], 1);
+            atomicAdd(&fitness[networkIndex], 1.0f / 60000.0f);
         }
     }
 }
@@ -242,10 +242,9 @@ void calculateFitnessGPU(
     cudaMemcpy(d_images, images, dataCount * 28 * 28 * sizeof(float), H2D);
     cudaMemcpy(d_networks, networks, networkCount * NUM_WEIGHTS * sizeof(float), H2D);
     cudaMemcpy(d_labels, labels, dataCount * sizeof(int), H2D);
-    cudaMemcpy(d_fitness, fitness, networkCount * sizeof(float), H2D);
 
     // grid = data, network and filter indexes
-    dim3 grid(dataCount, networkCount, NUM_FILTERS);
+    dim3 grid(dataCount, networkCount);
 
     // 1 block = 1 network with 1 input image, 26x26 threads
     // To be able to sync the numFilters and avoid saving the conv in shared memory,
@@ -255,4 +254,6 @@ void calculateFitnessGPU(
     calculateConvolutionGPU<<<grid, block>>>(d_images, d_networks, d_labels, d_fitness);
 
     CHECK(cudaDeviceSynchronize());
+
+    CHECK(cudaMemcpy(fitness, d_fitness, networkCount * sizeof(float), D2H));
 }
