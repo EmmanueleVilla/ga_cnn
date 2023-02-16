@@ -73,14 +73,12 @@ int calculateNetworkLabelCPU(
     }
 
     // Calculate dense layer
-    float output[10];
     int max = -999;
     for (int i = 0; i < 10; i++) {
         float sum = 0;
         for (int j = 0; j < 13 * 13 * 5; j++) {
             sum += pooled[j] * network[45 + i * 13 * 13 * 5 + j];
         }
-        output[i] = sum;
         if (sum > max || max == -999) {
             max = i;
         }
