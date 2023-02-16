@@ -10,7 +10,9 @@
 
 __global__ void calculateConvolutionGPU(
         const float *images,
-        const float *networks
+        const float *networks,
+        const int *labels,
+        float *fitness
 ) {
     int imageIndex = blockIdx.x;
     int networkIndex = blockIdx.y;
@@ -20,8 +22,6 @@ __global__ void calculateConvolutionGPU(
 
     __shared__ float image[IMAGE_INPUT_SIZE];
     __shared__ float network[NUM_WEIGHTS];
-    __shared__ float conv[CONV_IMAGE_SIZE];
-    //__shared__ float pooled[POOLED_IMAGE_SIZE_TOT];
     __shared__ float output[OUTPUT_PER_FILTER];
 
     // copy the image to the block shared memory
@@ -41,71 +41,130 @@ __global__ void calculateConvolutionGPU(
     // and then it will take only the maximum value
 
     float pooled = 0;
+    float sum = 0;
 
-    // maybe loop unrolling
-    for (int x = i; x < i + 2; x++) {
-        for (int y = j; y < j + 2; y++) {
-            int start = filter * 9;
-            int i_1 = (x - 1) * 28;
-            int i_2 = x * 28;
-            int i_3 = (x + 1) * 28;
+    // x = i, y = j
+    int x = i;
+    int y = j;
 
-            int j_1 = y - 1;
-            int j_2 = y;
-            int j_3 = y + 1;
-            float sum = 0;
-            sum += image[i_1 + j_1] * network[start];
-            sum += image[i_1 + j_2] * network[start + 1];
-            sum += image[i_1 + j_3] * network[start + 2];
+    int start = filter * 9;
+    int i_1 = (x - 1) * 28;
+    int i_2 = x * 28;
+    int i_3 = (x + 1) * 28;
 
-            sum += image[i_2 + j_1] * network[start + 3];
-            sum += image[i_2 + j_2] * network[start + 4];
-            sum += image[i_2 + j_3] * network[start + 5];
+    int j_1 = y - 1;
+    int j_2 = y;
+    int j_3 = y + 1;
+    sum = 0;
+    sum += image[i_1 + j_1] * network[start];
+    sum += image[i_1 + j_2] * network[start + 1];
+    sum += image[i_1 + j_3] * network[start + 2];
 
-            sum += image[i_3 + j_1] * network[start + 6];
-            sum += image[i_3 + j_2] * network[start + 7];
-            sum += image[i_3 + j_3] * network[start + 8];
-            if (sum > pooled) {
-                pooled = sum;
-            }
-        }
+    sum += image[i_2 + j_1] * network[start + 3];
+    sum += image[i_2 + j_2] * network[start + 4];
+    sum += image[i_2 + j_3] * network[start + 5];
+
+    sum += image[i_3 + j_1] * network[start + 6];
+    sum += image[i_3 + j_2] * network[start + 7];
+    sum += image[i_3 + j_3] * network[start + 8];
+    if (sum > pooled) {
+        pooled = sum;
     }
 
-    /*
-    // can I avoid this access?
-    conv[i * 26 + j * 26] = sum;
+    // x = i + 1, y = j
 
-    __syncthreads();
+    x = i + 1;
+    y = j;
 
-    // --- MAX POOLING ---
-    if (i < 26 && i % 2 == 1 && j < 26 && j % 2 == 1) {
-        int ii_1 = (i - 1) * 26;
-        int ii_2 = i * 26;
-        float v1 = conv[ii_1 + j - 1];
-        float v2 = conv[ii_1 + j];
-        float v3 = conv[ii_1 + j + 1];
-        float v4 = conv[ii_2 + j - 1];
-        float v5 = conv[ii_2 + j];
-        float v6 = conv[ii_2 + j + 1];
+    start = filter * 9;
+    i_1 = (x - 1) * 28;
+    i_2 = x * 28;
+    i_3 = (x + 1) * 28;
 
-        float m1 = max(v1, v2);
-        float m2 = max(v3, v4);
-        float m3 = max(v5, v6);
+    j_1 = y - 1;
+    j_2 = y;
+    j_3 = y + 1;
+    sum = 0;
+    sum += image[i_1 + j_1] * network[start];
+    sum += image[i_1 + j_2] * network[start + 1];
+    sum += image[i_1 + j_3] * network[start + 2];
 
-        float m4 = max(m1, m2);
-        float m6 = max(m3, m4);
+    sum += image[i_2 + j_1] * network[start + 3];
+    sum += image[i_2 + j_2] * network[start + 4];
+    sum += image[i_2 + j_3] * network[start + 5];
 
-        // I can avoid this access and directly use the value to calculate the partial output
-        //pooled[i * 13 + j * 13] = m6;
-
-        for (int out = 0; out < 10; out++) {
-            output[filter * 10 + out] = m6 * network[45 + out * 13 * 13 * 5 + i * 13 + j * 13];
-        }
+    sum += image[i_3 + j_1] * network[start + 6];
+    sum += image[i_3 + j_2] * network[start + 7];
+    sum += image[i_3 + j_3] * network[start + 8];
+    if (sum > pooled) {
+        pooled = sum;
     }
-    __syncthreads();
 
-    // Now I have all the partial outputs for this network and this image, for every filter.
-    // It's time to sum them together and calculate the fitness
+    // x = i, y = j + 1
+
+    x = i;
+    y = j + 1;
+
+    start = filter * 9;
+    i_1 = (x - 1) * 28;
+    i_2 = x * 28;
+    i_3 = (x + 1) * 28;
+
+    j_1 = y - 1;
+    j_2 = y;
+    j_3 = y + 1;
+    sum = 0;
+    sum += image[i_1 + j_1] * network[start];
+    sum += image[i_1 + j_2] * network[start + 1];
+    sum += image[i_1 + j_3] * network[start + 2];
+
+    sum += image[i_2 + j_1] * network[start + 3];
+    sum += image[i_2 + j_2] * network[start + 4];
+    sum += image[i_2 + j_3] * network[start + 5];
+
+    sum += image[i_3 + j_1] * network[start + 6];
+    sum += image[i_3 + j_2] * network[start + 7];
+    sum += image[i_3 + j_3] * network[start + 8];
+    if (sum > pooled) {
+        pooled = sum;
+    }
+
+    // x = i + 1, y = j + 1
+
+    x = i + 1;
+    y = j + 1;
+
+    start = filter * 9;
+    i_1 = (x - 1) * 28;
+    i_2 = x * 28;
+    i_3 = (x + 1) * 28;
+
+    j_1 = y - 1;
+    j_2 = y;
+    j_3 = y + 1;
+    sum = 0;
+    sum += image[i_1 + j_1] * network[start];
+    sum += image[i_1 + j_2] * network[start + 1];
+    sum += image[i_1 + j_3] * network[start + 2];
+
+    sum += image[i_2 + j_1] * network[start + 3];
+    sum += image[i_2 + j_2] * network[start + 4];
+    sum += image[i_2 + j_3] * network[start + 5];
+
+    sum += image[i_3 + j_1] * network[start + 6];
+    sum += image[i_3 + j_2] * network[start + 7];
+    sum += image[i_3 + j_3] * network[start + 8];
+    if (sum > pooled) {
+        pooled = sum;
+    }
+
+    // Now I have the pooled pixel. I calculate its partial output for this filter, and then sync threads
+
+    for (int out = 0; out < 10; out++) {
+        output[filter * 10 + out] = pooled * network[45 + out * 13 * 13 * 5 + i * 13 + j * 13];
+    }
+
+    __syncthreads();
 
     // Only one thread per block is responsible to sum
     if (i == 1 && j == 1) {
@@ -153,8 +212,12 @@ __global__ void calculateConvolutionGPU(
         }
 
         // finally, maxIndex is the prediction of this network for this image!
+        // if it's correct, I increment the fitness of this network using an atomic operation
+        if (maxIndex == labels[networkIndex]) {
+            fitness[networkIndex] += 1;
+            //atomicAdd(&fitness[networkIndex], 1);
+        }
     }
-     */
 }
 
 void calculateFitnessGPU(
@@ -169,15 +232,18 @@ void calculateFitnessGPU(
     float *d_images;
     float *d_networks;
     int *d_labels;
+    float *d_fitness;
 
     // TODO check if pinned memory is faster
     cudaMalloc((void **) &d_images, dataCount * 28 * 28 * sizeof(float));
     cudaMalloc((void **) &d_networks, networkCount * NUM_WEIGHTS * sizeof(float));
     cudaMalloc((void **) &d_labels, dataCount * sizeof(int));
+    cudaMalloc((void **) &d_fitness, networkCount * sizeof(float));
 
     cudaMemcpy(d_images, images, dataCount * 28 * 28 * sizeof(float), H2D);
     cudaMemcpy(d_networks, networks, networkCount * NUM_WEIGHTS * sizeof(float), H2D);
     cudaMemcpy(d_labels, labels, dataCount * sizeof(int), H2D);
+    cudaMemcpy(d_fitness, fitness, networkCount * sizeof(float), H2D);
 
     // grid = data, network and filter indexes
     dim3 grid(dataCount, networkCount, NUM_FILTERS);
@@ -187,7 +253,7 @@ void calculateFitnessGPU(
     // I could launch 13x13x5 threads, so < 1024
     dim3 block(13, 13, NUM_FILTERS);
 
-    calculateConvolutionGPU<<<grid, block>>>(d_images, d_networks);
+    calculateConvolutionGPU<<<grid, block>>>(d_images, d_networks, d_labels, d_fitness);
 
     CHECK(cudaDeviceSynchronize());
 }
