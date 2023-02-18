@@ -46,11 +46,12 @@ __global__ void calculateConvolutionGPU(
     // I have 845 threads per block
     // so each thread will copy 11 weights
     // TODO: fix this fng tid calculation
-    int tid = (threadIdx.x * blockDim.x + threadIdx.y) * threadIdx.z;
+    int tid = threadIdx.x + blockDim.x * (threadIdx.y + blockDim.y * threadIdx.z);
     //printf("tid: %d\n", tid);
-    for (int w_i = 0; w_i < 11; w_i++) {
-        if (tid + tid * w_i < NUM_WEIGHTS) {
-            network[tid + tid * w_i] = networks[networkIndex * NUM_WEIGHTS + tid + tid * w_i];
+    for (int w_i = 0; w_i < 20; w_i++) {
+        int w_index = tid + blockDim.x * blockDim.y * blockDim.z * w_i;
+        if (w_index < NUM_WEIGHTS) {
+            network[w_index] = networks[networkIndex * NUM_WEIGHTS + w_index];
         }
     }
 
@@ -69,7 +70,6 @@ __global__ void calculateConvolutionGPU(
         }
     }
 
-    return;
     // To avoid saving partial values in memory, I merge the convolution, pooling and output steps.
     // The thread i, j will take care of calculating the convolution of the 4 pixels:
     // (i, j), (i+1, j), (i, j+1), (i+1, j+1)
