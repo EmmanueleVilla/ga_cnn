@@ -292,12 +292,45 @@ __global__ void calculateConvolutionGPU(
             sums[9] += maxPooled[poolIndex] * network[NET9 + poolIndex];
         }
 
-        // find the index of the max value in the sums array
-        for (int i = 0; i < 10; i++) {
-            if (sums[i] > max) {
-                max = sums[i];
-                index = i;
-            }
+        if (sums[0] > max) {
+            max = sums[0];
+            index = 0;
+        }
+        if (sums[1] > max) {
+            max = sums[1];
+            index = 1;
+        }
+        if (sums[2] > max) {
+            max = sums[2];
+            index = 2;
+        }
+        if (sums[3] > max) {
+            max = sums[3];
+            index = 3;
+        }
+        if (sums[4] > max) {
+            max = sums[4];
+            index = 4;
+        }
+        if (sums[5] > max) {
+            max = sums[5];
+            index = 5;
+        }
+        if (sums[6] > max) {
+            max = sums[6];
+            index = 6;
+        }
+        if (sums[7] > max) {
+            max = sums[7];
+            index = 7;
+        }
+        if (sums[8] > max) {
+            max = sums[8];
+            index = 8;
+        }
+        if (sums[9] > max) {
+            max = sums[9];
+            index = 9;
         }
 
         if (index == labels[imageIndex]) {

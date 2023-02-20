@@ -6,6 +6,7 @@
 #include "init_networks.cuh"
 #include "../defines.cuh"
 #include <stdio.h>
+#include <ctime>
 
 int calculateNetworkLabelCPU(
         const float *images,
@@ -99,17 +100,10 @@ float calculateFitnessCPUSingleNetwork(
         int netWorkIndex,
         int networkCount
 ) {
-    //printf("Calculating fitness of network %d\n", netWorkIndex);
-    printf("\r[");
-    float percentage = netWorkIndex / (float) networkCount * 100;
-    for (int i = 0; i < 100; i++) {
-        if (i < percentage) {
-            printf("=");
-        } else {
-            printf(" ");
-        }
-    }
-    printf("] %d%%", (int) percentage);
+    clock_t start, end;
+
+    start = clock();
+
     int correct = 0;
     for (int i = 0; i < dataCount; i++) {
         int label = labels[i];
@@ -118,6 +112,10 @@ float calculateFitnessCPUSingleNetwork(
             correct++;
         }
     }
+    end = clock();
+
+    printf("one network done in: \t%6.3ld\n", end - start);
+
     return ((float) correct / (float) dataCount * 100);
 }
 
