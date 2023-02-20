@@ -4,7 +4,6 @@
 
 #include "init_networks_utils.cuh"
 #include <corecrt_math.h>
-#include <stdio.h>
 
 float randGaussian() {
     float a = (float) rand() / (float) RAND_MAX;
@@ -18,5 +17,5 @@ float randGaussian() {
 
     float R0 = sqrt(-2.0 * log(a)) * cos(2 * M_PI * b);
 
-    return R0 / 10;
+    return R0 / 5;
 }

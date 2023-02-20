@@ -24,8 +24,6 @@ __global__ void calculateConvolutionGPU(
     __shared__ float network[NUM_WEIGHTS];
     __shared__ float maxPooled[POOLED_SIZE];
 
-    printf("Copying image\n");
-
     unsigned int xx = threadIdx.x * 2;
     unsigned int yy = threadIdx.y * 2;
     unsigned int pixel = xx * 28 + yy;
@@ -53,6 +51,7 @@ __global__ void calculateConvolutionGPU(
 
     int debugImageIndex = 25765;
     int debugFilterIndex = 2;
+    //TODO: DEBUG MODE - COPIED IMAGE
     if (threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == debugFilterIndex
         && blockIdx.x == debugImageIndex && blockIdx.y == 0 && blockIdx.z == 0
             ) {
@@ -74,7 +73,7 @@ __global__ void calculateConvolutionGPU(
             printf("\n");
         }
     }
-/*
+
     //TODO: DEBUG MODE
     // Verify all weights are copied
     if (threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == 0
@@ -86,7 +85,6 @@ __global__ void calculateConvolutionGPU(
             }
         }
     }
-    */
 
     // To avoid saving partial values in memory, I merge the convolution, pooling and output steps.
     // The thread i, j will take care of calculating the convolution of the 4 pixels:
@@ -111,37 +109,31 @@ __global__ void calculateConvolutionGPU(
         unsigned int j_2 = y;
         unsigned int j_3 = y + 1;
 
-        /*
-        if (i_1 + j_1 > 28 * 28) {
-            printf("x: %u, y: %u, i_1: %u, j_1: %u\n", x, y, i_1, j_1);
-        }
 
         //TODO: DEBUG MODE - FILTER
         if (threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == debugFilterIndex
             && blockIdx.x == debugImageIndex && blockIdx.y == 0 && blockIdx.z == 0
                 ) {
-            printf("Filter %d:\n", filter);
-            for (int image_i = 0; image_i < 3; image_i++) {
-                for (int image_j = 0; image_j < 3; image_j++) {
-                    int index = start + image_i * 3 + image_j;
-                    if (network[index] > 0.5f) {
-                        printf("X");
-                    } else if (network[index] > 0.25f) {
-                        printf("x");
-                    } else if (network[index] > -0.25f) {
-                        printf(",");
-                    } else if (network[index] > -0.5f) {
-                        printf(".");
-                    } else {
-                        printf(" ");
+            for (int filterIndex = 0; filterIndex < 5; filterIndex++) {
+                printf("\nFilter %d:\n", filterIndex);
+                for (int image_i = 0; image_i < 3; image_i++) {
+                    for (int image_j = 0; image_j < 3; image_j++) {
+                        int index = filterIndex * 9 + image_i * 3 + image_j;
+                        if (network[index] > 0.05f) {
+                            printf("X");
+                        } else if (network[index] > 0.025f) {
+                            printf("x");
+                        } else if (network[index] > -0.025f) {
+                            printf(",");
+                        } else {
+                            printf(".");
+                        }
                     }
+                    printf("\n");
                 }
-                printf("\n");
             }
             printf("\n");
-            printf("\n");
         }
-*/
 
         sum = 0;
         sum += image[i_1 + j_1] * network[start];
@@ -251,50 +243,49 @@ __global__ void calculateConvolutionGPU(
 
     __syncthreads();
 
-    /*
     //TODO: DEBUG max pooled image: wrong
     if (threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == debugFilterIndex
         && blockIdx.x == debugImageIndex && blockIdx.y == 0 && blockIdx.z == 0
             ) {
-        float *img = (float *) &maxPooled[filter * 13 * 13];
-        for (int max_i = 0; max_i < 13; max_i++) {
-            for (int max_j = 0; max_j < 13; max_j++) {
-                int index = max_i * 13 + max_j;
-                if (img[index] > 0.5f) {
-                    printf("X");
-                } else if (img[index] > 0.25f) {
-                    printf("x");
-                } else if (img[index] > -0.25f) {
-                    printf(",");
-                } else if (img[index] > -0.5f) {
-                    printf(".");
-                } else {
-                    printf(" ");
+        for (int filterIndex = 0; filterIndex < 5; filterIndex++) {
+            printf("Max pooled image #%d:\n", filterIndex);
+            float *img = (float *) &maxPooled[filterIndex * 13 * 13];
+            for (int max_i = 0; max_i < 13; max_i++) {
+                for (int max_j = 0; max_j < 13; max_j++) {
+                    int index = max_i * 13 + max_j;
+                    if (img[index] > 0.5f) {
+                        printf("X");
+                    } else if (img[index] > 0.25f) {
+                        printf("x");
+                    } else if (img[index] > -0.25f) {
+                        printf(",");
+                    } else if (img[index] > -0.5f) {
+                        printf(".");
+                    } else {
+                        printf(" ");
+                    }
                 }
+                printf("\n");
             }
-            printf("\n");
         }
     }
-*/
-    printf("wtf?");
+
     // Only one thread per block is responsible to calculate the dense layer
     if (threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == 0) {
 
-        // Calculate dense layer
-        float maxSum = -999;
-        int outputIndex = 0;
-        for (int outIndex = 0; outIndex < 10; outIndex++) {
-            float sum = 0;
+        int max = -999;
+        for (int outputIndex = 0; i < 10; i++) {
+            float sumValue = 0;
             for (int poolIndex = 0; poolIndex < 13 * 13 * 5; poolIndex++) {
-                sum += maxPooled[poolIndex] * network[45 + outIndex * 13 * 13 * 5 + j];
+                sumValue += maxPooled[poolIndex] * network[45 + outputIndex * 13 * 13 * 5 + poolIndex];
             }
-            if (sum > maxSum) {
-                maxSum = sum;
-                outputIndex = outIndex;
+            if (sumValue > max || max == -999) {
+                max = (int) outputIndex;
             }
         }
-        if (outputIndex == labels[imageIndex]) {
-            printf("Correct label is %d\n", labels[imageIndex]);
+
+        //printf("Label is %d\n", labels[imageIndex]);
+        if (max == labels[imageIndex]) {
             atomicAdd(&fitness[networkIndex], 1.0f / 60000.0f);
         }
     }
@@ -334,9 +325,7 @@ void calculateFitnessGPU(
     // But I use 14x14 to parallelize the copy of the 28x28 image in shared memory
     dim3 block(14, 14, NUM_FILTERS);
 
-    calculateConvolutionGPU<<<grid, block>>>(
-            d_images, d_networks, d_labels, d_fitness
-    );
+    calculateConvolutionGPU<<<grid, block>>>(d_images, d_networks, d_labels, d_fitness);
 
     CHECK(cudaDeviceSynchronize());
 
