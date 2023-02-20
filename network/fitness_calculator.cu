@@ -12,11 +12,13 @@ void calculateFitness(int *labels,
                       int networkCount,
                       int dataCount,
                       float *fitness,
+                      int *d_labels,
+                      float *d_images,
                       MODE mode) {
 
     if (mode == CPU) {
         calculateFitnessCPU(labels, images, networks, networkCount, dataCount, fitness);
     } else {
-        calculateFitnessGPU(labels, images, networks, networkCount, dataCount, fitness);
+        calculateFitnessGPU(d_labels, d_images, networks, networkCount, dataCount, fitness);
     }
 }

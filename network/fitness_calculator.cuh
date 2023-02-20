@@ -10,7 +10,8 @@
 
 void
 calculateFitness(int *labels, float *images, float *networks, int networkCount, int dataCount,
-                 float *fitness, MODE mode);
+                 float *fitness, int *d_labels,
+                 float *d_images, MODE mode);
 
 
 #endif //GA_CNN_FITNESS_CALCULATOR_CUH

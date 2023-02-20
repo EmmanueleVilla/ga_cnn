@@ -344,39 +344,29 @@ __global__ void calculateConvolutionGPU(
 }
 
 void calculateFitnessGPU(
-        const int *labels,
-        const float *images,
+        const int *d_labels,
+        const float *d_images,
         const float *networks,
         int networkCount,
         int dataCount,
         float *fitness) {
 
-    // copy data to gpu
-    //TODO: copy images and labels only the first time
-    float *d_images;
+// copy data to gpu
     float *d_networks;
-    int *d_labels;
     float *d_fitness;
-    //bool *d_big_fitness;
 
-    // TODO check if pinned memory is faster
-    cudaMalloc((void **) &d_images, dataCount * 28 * 28 * sizeof(float));
     cudaMalloc((void **) &d_networks, networkCount * NUM_WEIGHTS * sizeof(float));
-    cudaMalloc((void **) &d_labels, dataCount * sizeof(int));
     cudaMalloc((void **) &d_fitness, networkCount * sizeof(float));
-    //cudaMalloc((void **) &d_big_fitness, networkCount * dataCount * sizeof(bool));
+    cudaMemcpy(d_networks, networks, networkCount
+                                     * NUM_WEIGHTS * sizeof(float), H2D);
 
-    cudaMemcpy(d_images, images, dataCount * 28 * 28 * sizeof(float), H2D);
-    cudaMemcpy(d_networks, networks, networkCount * NUM_WEIGHTS * sizeof(float), H2D);
-    cudaMemcpy(d_labels, labels, dataCount * sizeof(int), H2D);
-
-    // grid = data, network and filter indexes
+// grid = data, network and filter indexes
     dim3 grid(dataCount, networkCount);
 
-    // 1 block = 1 network with 1 input image, 26x26 threads
-    // To be able to sync the numFilters and avoid saving the conv in shared memory,
-    // I could launch 13x13x5 threads, so < 1024
-    // But I use 14x14 to parallelize the copy of the 28x28 image in shared memory
+// 1 block = 1 network with 1 input image, 26x26 threads
+// To be able to sync the numFilters and avoid saving the conv in shared memory,
+// I could launch 13x13x5 threads, so < 1024
+// But I use 14x14 to parallelize the copy of the 28x28 image in shared memory
     dim3 block(14, 14, NUM_FILTERS);
 
     calculateConvolutionGPU<<<grid, block>>>(
@@ -384,11 +374,12 @@ void calculateFitnessGPU(
             d_networks,
             d_labels,
             d_fitness
-            //d_big_fitness,
-            //networkCount
     );
 
     CHECK(cudaDeviceSynchronize());
 
     CHECK(cudaMemcpy(fitness, d_fitness, networkCount * sizeof(float), D2H));
+
+    cudaFree(d_networks);
+    cudaFree(d_fitness);
 }

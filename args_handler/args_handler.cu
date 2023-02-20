@@ -11,6 +11,7 @@
 #include "../network/fitness_calculator.cuh"
 #include "../genetic/evolve_population.cuh"
 #include "../defines.cuh"
+#include "../network/fitness_calculator_gpu.cuh"
 #include <stdio.h>
 #include <ctime>
 
@@ -67,9 +68,20 @@ bool handle(int argc, char **argv) {
 
     int generation = 0;
     printf("Start fitness: \t%6.3ld\n", start);
+
+    float *d_images = nullptr;
+    int *d_labels = nullptr;
+
+    if (argMode == GPU) {
+        cudaMalloc((void **) &d_images, size * 28 * 28 * sizeof(float));
+        cudaMalloc((void **) &d_labels, size * sizeof(int));
+        cudaMemcpy(d_images, images, size * 28 * 28 * sizeof(float), H2D);
+        cudaMemcpy(d_labels, labels, size * sizeof(int), H2D);
+    }
+
     while (maxFitness < 95) {
         start = clock();
-        calculateFitness(labels, images, networks, populationSize, size, fitness, argMode);
+        calculateFitness(labels, images, networks, populationSize, size, fitness, d_labels, d_images, argMode);
         evolve(networks, fitness, populationSize, argMode);
         for (int i = 0; i < populationSize; i++) {
             if (fitness[i] > maxFitness) {
