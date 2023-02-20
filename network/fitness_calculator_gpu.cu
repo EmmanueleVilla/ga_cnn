@@ -51,6 +51,7 @@ __global__ void calculateConvolutionGPU(
 
     int debugImageIndex = 25765;
     int debugFilterIndex = 2;
+    /*
     //TODO: DEBUG MODE - COPIED IMAGE
     if (threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == debugFilterIndex
         && blockIdx.x == debugImageIndex && blockIdx.y == 0 && blockIdx.z == 0
@@ -85,7 +86,7 @@ __global__ void calculateConvolutionGPU(
             }
         }
     }
-
+*/
     // To avoid saving partial values in memory, I merge the convolution, pooling and output steps.
     // The thread i, j will take care of calculating the convolution of the 4 pixels:
     // (i, j), (i+1, j), (i, j+1), (i+1, j+1)
@@ -109,7 +110,7 @@ __global__ void calculateConvolutionGPU(
         unsigned int j_2 = y;
         unsigned int j_3 = y + 1;
 
-
+/*
         //TODO: DEBUG MODE - FILTER
         if (threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == debugFilterIndex
             && blockIdx.x == debugImageIndex && blockIdx.y == 0 && blockIdx.z == 0
@@ -134,7 +135,7 @@ __global__ void calculateConvolutionGPU(
             }
             printf("\n");
         }
-
+*/
         sum = 0;
         sum += image[i_1 + j_1] * network[start];
         sum += image[i_1 + j_2] * network[start + 1];
@@ -243,6 +244,7 @@ __global__ void calculateConvolutionGPU(
 
     __syncthreads();
 
+    /*
     //TODO: DEBUG max pooled image: wrong
     if (threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == debugFilterIndex
         && blockIdx.x == debugImageIndex && blockIdx.y == 0 && blockIdx.z == 0
@@ -269,23 +271,36 @@ __global__ void calculateConvolutionGPU(
             }
         }
     }
-
+*/
     // Only one thread per block is responsible to calculate the dense layer
     if (threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == 0) {
 
-        int max = -999;
-        for (int outputIndex = 0; i < 10; i++) {
-            float sumValue = 0;
-            for (int poolIndex = 0; poolIndex < 13 * 13 * 5; poolIndex++) {
-                sumValue += maxPooled[poolIndex] * network[45 + outputIndex * 13 * 13 * 5 + poolIndex];
-            }
-            if (sumValue > max || max == -999) {
-                max = (int) outputIndex;
+        float sums[10];
+        float max = -999;
+        int index = 0;
+
+        for (int poolIndex = 0; poolIndex < 13 * 13 * 5; poolIndex++) {
+            sums[0] += maxPooled[poolIndex] * network[NET0 + poolIndex];
+            sums[1] += maxPooled[poolIndex] * network[NET1 + poolIndex];
+            sums[2] += maxPooled[poolIndex] * network[NET2 + poolIndex];
+            sums[3] += maxPooled[poolIndex] * network[NET3 + poolIndex];
+            sums[4] += maxPooled[poolIndex] * network[NET4 + poolIndex];
+            sums[5] += maxPooled[poolIndex] * network[NET5 + poolIndex];
+            sums[6] += maxPooled[poolIndex] * network[NET6 + poolIndex];
+            sums[7] += maxPooled[poolIndex] * network[NET7 + poolIndex];
+            sums[8] += maxPooled[poolIndex] * network[NET8 + poolIndex];
+            sums[9] += maxPooled[poolIndex] * network[NET9 + poolIndex];
+        }
+
+        // find the index of the max value in the sums array
+        for (int i = 0; i < 10; i++) {
+            if (sums[i] > max) {
+                max = sums[i];
+                index = i;
             }
         }
 
-        //printf("Label is %d\n", labels[imageIndex]);
-        if (max == labels[imageIndex]) {
+        if (index == labels[imageIndex]) {
             atomicAdd(&fitness[networkIndex], 1.0f / 60000.0f);
         }
     }

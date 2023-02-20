@@ -5,6 +5,7 @@
 #include "fitness_calculator_cpu.cuh"
 #include "init_networks.cuh"
 #include "../defines.cuh"
+#include <stdio.h>
 
 int calculateNetworkLabelCPU(
         const float *images,
@@ -95,9 +96,20 @@ float calculateFitnessCPUSingleNetwork(
         const float *images,
         const float *networks,
         int dataCount,
-        int netWorkIndex
+        int netWorkIndex,
+        int networkCount
 ) {
     //printf("Calculating fitness of network %d\n", netWorkIndex);
+    printf("\r[");
+    float percentage = netWorkIndex / (float) networkCount * 100;
+    for (int i = 0; i < 100; i++) {
+        if (i < percentage) {
+            printf("=");
+        } else {
+            printf(" ");
+        }
+    }
+    printf("] %d%%", (int) percentage);
     int correct = 0;
     for (int i = 0; i < dataCount; i++) {
         int label = labels[i];
@@ -120,7 +132,7 @@ void calculateFitnessCPU(
 ) {
     //printf("Calculating fitness on CPU\n");
     for (int i = 0; i < networkCount; i++) {
-        fitness[i] = calculateFitnessCPUSingleNetwork(labels, images, networks, dataCount, i);
+        fitness[i] = calculateFitnessCPUSingleNetwork(labels, images, networks, dataCount, i, networkCount);
         //printf("Fitness of network %d: %f\n", i, fitness[i]);
     }
 }
