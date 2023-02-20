@@ -357,6 +357,7 @@ void calculateFitnessGPU(
 
     cudaMalloc((void **) &d_networks, networkCount * NUM_WEIGHTS * sizeof(float));
     cudaMalloc((void **) &d_fitness, networkCount * sizeof(float));
+    cudaMemset(d_fitness, 0, networkCount * sizeof(float));
     cudaMemcpy(d_networks, networks, networkCount
                                      * NUM_WEIGHTS * sizeof(float), H2D);
 
