@@ -13,6 +13,8 @@ __global__ void calculateConvolutionGPU(
         const float *networks,
         const int *labels,
         float *fitness
+        //bool *d_big_fitness,
+        //int networkCount
 ) {
     unsigned int imageIndex = blockIdx.x;
     unsigned int networkIndex = blockIdx.y;
@@ -335,6 +337,8 @@ __global__ void calculateConvolutionGPU(
 
         if (index == labels[imageIndex]) {
             atomicAdd(&fitness[networkIndex], 1.0f / 60000.0f);
+            // Change approach because there are too many atomic adds
+            // It's the same with d_big_fitness...
         }
     }
 }
@@ -353,12 +357,14 @@ void calculateFitnessGPU(
     float *d_networks;
     int *d_labels;
     float *d_fitness;
+    //bool *d_big_fitness;
 
     // TODO check if pinned memory is faster
     cudaMalloc((void **) &d_images, dataCount * 28 * 28 * sizeof(float));
     cudaMalloc((void **) &d_networks, networkCount * NUM_WEIGHTS * sizeof(float));
     cudaMalloc((void **) &d_labels, dataCount * sizeof(int));
     cudaMalloc((void **) &d_fitness, networkCount * sizeof(float));
+    //cudaMalloc((void **) &d_big_fitness, networkCount * dataCount * sizeof(bool));
 
     cudaMemcpy(d_images, images, dataCount * 28 * 28 * sizeof(float), H2D);
     cudaMemcpy(d_networks, networks, networkCount * NUM_WEIGHTS * sizeof(float), H2D);
@@ -373,7 +379,14 @@ void calculateFitnessGPU(
     // But I use 14x14 to parallelize the copy of the 28x28 image in shared memory
     dim3 block(14, 14, NUM_FILTERS);
 
-    calculateConvolutionGPU<<<grid, block>>>(d_images, d_networks, d_labels, d_fitness);
+    calculateConvolutionGPU<<<grid, block>>>(
+            d_images,
+            d_networks,
+            d_labels,
+            d_fitness
+            //d_big_fitness,
+            //networkCount
+    );
 
     CHECK(cudaDeviceSynchronize());
 
