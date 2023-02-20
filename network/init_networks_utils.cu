@@ -18,5 +18,5 @@ float randGaussian() {
 
     float R0 = sqrt(-2.0 * log(a)) * cos(2 * M_PI * b);
 
-    return R0 / 5;
+    return R0 / 10;
 }

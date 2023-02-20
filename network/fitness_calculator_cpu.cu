@@ -73,19 +73,21 @@ int calculateNetworkLabelCPU(
     }
 
     // Calculate dense layer
-    int max = -999;
+    float max = -999;
+    int index = 0;
     for (int i = 0; i < 10; i++) {
         float sum = 0;
         for (int j = 0; j < 13 * 13 * 5; j++) {
             sum += pooled[j] * network[45 + i * 13 * 13 * 5 + j];
         }
-        if (sum > max || max == -999) {
-            max = i;
+        if (sum > max) {
+            max = sum;
+            index = i;
         }
     }
 
     // Return the label with the highest value
-    return max;
+    return index;
 }
 
 float calculateFitnessCPUSingleNetwork(

@@ -12,6 +12,9 @@ void initNetworks(float *networks, int count) {
     for (int i = 0; i < count; i++) {
         for (int j = 0; j < NUM_WEIGHTS; j++) {
             float rand = randGaussian();
+            if (i > 45) {
+                rand /= 10;
+            }
             networks[i * NUM_WEIGHTS + j] = rand;
         }
     }

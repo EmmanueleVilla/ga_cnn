@@ -281,19 +281,21 @@ __global__ void calculateConvolutionGPU(
     // Only one thread per block is responsible to calculate the dense layer
     if (threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == 0) {
 
-        int max = -999;
-        for (int outputIndex = 0; i < 10; i++) {
-            float sumValue = 0;
+        // Calculate dense layer
+        float maxSum = -999;
+        int outputIndex = 0;
+        for (int outIndex = 0; outIndex < 10; outIndex++) {
+            float sum = 0;
             for (int poolIndex = 0; poolIndex < 13 * 13 * 5; poolIndex++) {
-                sumValue += maxPooled[poolIndex] * network[45 + outputIndex * 13 * 13 * 5 + poolIndex];
+                sum += maxPooled[poolIndex] * network[45 + outIndex * 13 * 13 * 5 + j];
             }
-            if (sumValue > max || max == -999) {
-                max = (int) outputIndex;
+            if (sum > maxSum) {
+                maxSum = sum;
+                outputIndex = outIndex;
             }
         }
-
-        //printf("Label is %d\n", labels[imageIndex]);
-        if (max == labels[imageIndex]) {
+        if (outputIndex == labels[imageIndex]) {
+            printf("Correct label is %d\n", labels[imageIndex]);
             atomicAdd(&fitness[networkIndex], 1.0f / 60000.0f);
         }
     }
