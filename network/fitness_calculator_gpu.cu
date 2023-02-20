@@ -24,6 +24,8 @@ __global__ void calculateConvolutionGPU(
     __shared__ float network[NUM_WEIGHTS];
     __shared__ float maxPooled[POOLED_SIZE];
 
+    printf("Copying image\n");
+
     unsigned int xx = threadIdx.x * 2;
     unsigned int yy = threadIdx.y * 2;
     unsigned int pixel = xx * 28 + yy;
@@ -51,8 +53,6 @@ __global__ void calculateConvolutionGPU(
 
     int debugImageIndex = 25765;
     int debugFilterIndex = 2;
-/*
-    //TODO: DEBUG MODE - COPIED IMAGE
     if (threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == debugFilterIndex
         && blockIdx.x == debugImageIndex && blockIdx.y == 0 && blockIdx.z == 0
             ) {
@@ -74,8 +74,6 @@ __global__ void calculateConvolutionGPU(
             printf("\n");
         }
     }
-    */
-
 /*
     //TODO: DEBUG MODE
     // Verify all weights are copied
@@ -278,6 +276,7 @@ __global__ void calculateConvolutionGPU(
         }
     }
 */
+    printf("wtf?");
     // Only one thread per block is responsible to calculate the dense layer
     if (threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == 0) {
 
@@ -335,8 +334,9 @@ void calculateFitnessGPU(
     // But I use 14x14 to parallelize the copy of the 28x28 image in shared memory
     dim3 block(14, 14, NUM_FILTERS);
 
-
-    calculateConvolutionGPU<<<grid, block>>>(d_images, d_networks, d_labels, d_fitness);
+    calculateConvolutionGPU<<<grid, block>>>(
+            d_images, d_networks, d_labels, d_fitness
+    );
 
     CHECK(cudaDeviceSynchronize());
 
