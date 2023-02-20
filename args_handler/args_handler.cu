@@ -10,6 +10,7 @@
 #include "../network/init_networks.cuh"
 #include "../network/fitness_calculator.cuh"
 #include "../genetic/evolve_population.cuh"
+#include "../defines.cuh"
 #include <stdio.h>
 #include <ctime>
 
