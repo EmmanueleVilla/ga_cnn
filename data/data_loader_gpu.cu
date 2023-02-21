@@ -14,8 +14,8 @@ int atoi(char string[]);
 
 /**
  * This kernel counts the number of delimiters in the given buffer.
- * The buffer arrives as a string of characters, containing the data from the mnist_train.csv file.
- * @param buf the buffer containing the data from the mnist_train.csv file.
+ * The buffer arrives as a string of characters, containing the data from the mnist_train__.csv file.
+ * @param buf the buffer containing the data from the mnist_train__.csv file.
  * @param result the array containing the number of delimiters for each block.
  */
 __global__ void countDelimiters(const char *buf, int *result) {
@@ -34,7 +34,7 @@ __global__ void countDelimiters(const char *buf, int *result) {
 
 /**
  * This kernel fills the fieldsIndex array using the information from the prefixSum array.
- * @param buf the buffer containing the data from the mnist_train.csv file.
+ * @param buf the buffer containing the data from the mnist_train__.csv file.
  * @param prefixSum the array containing the prefix sum of the delimiters.
  * @param result the array to store the indexes of the delimiters.
  */
@@ -54,7 +54,7 @@ __global__ void fillFieldsIndexes(const char *buf, const int *prefixSum, int *re
 
 /**
  * Extracts the data from the buffer and stores it in the labels and images arrays.
- * @param buf the buffer containing the data from the mnist_train.csv file.
+ * @param buf the buffer containing the data from the mnist_train__.csv file.
  * @param fieldsIndex the array containing the indexes of the delimiters
  * @param labels the array to store the labels
  * @param images the array to store the images
@@ -79,7 +79,7 @@ __global__ void extractData(const char *buf, const int *fieldsIndex, int *labels
 }
 
 /**
- * This loads the data from the mnist_train.csv file using the GPU.
+ * This loads the data from the mnist_train__.csv file using the GPU.
  * It parses the file and loads the labels and images into the given arrays.
  * Info: https://www.clemenslutz.com/pdfs/msc_thesis_alexander_kumaigorodski.pdf
  * @param size: the number of entries to be read
