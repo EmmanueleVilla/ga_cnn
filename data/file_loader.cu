@@ -6,7 +6,7 @@
 #include <stdio.h>
 
 /**
- * This function reads the mnist_train__.csv file and return a FILE pointer to it.
+ * This function reads the mnist_train.csv file and return a FILE pointer to it.
  * @return
  */
 FILE *readFile() {
@@ -14,14 +14,14 @@ FILE *readFile() {
     errno_t err;
     err = fopen_s(&stream, "C:\\Users\\emman\\CLionProjects\\ga-cnn\\data\\mnist_train.csv", "r");
     if (err == 0) {
-        printf("The file '../../data/mnist_train__.csv' was opened\n");
+        printf("The file '../../data/mnist_train.csv' was opened\n");
     } else {
-        printf("The file '../../data/mnist_train__.csv' was not opened\n");
+        printf("The file '../../data/mnist_train.csv' was not opened\n");
         err = fopen_s(&stream, ".\\mnist_train.csv", "r");
         if (err == 0) {
-            printf("The fallback file 'mnist_train__.csv' was opened\n");
+            printf("The fallback file 'mnist_train.csv' was opened\n");
         } else {
-            printf("The fallback file 'mnist_train__.csv' was not opened\n");
+            printf("The fallback file 'mnist_train.csv' was not opened\n");
         }
     }
     return stream;

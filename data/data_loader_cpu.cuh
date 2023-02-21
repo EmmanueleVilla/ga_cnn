@@ -8,7 +8,7 @@
 #include <stdio.h>
 
 /**
- * This loads the data from the mnist_train__.csv file using the CPU.
+ * This loads the data from the mnist_train.csv file using the CPU.
  * It parses the file and loads the labels and images into the given arrays.
  * This process takes approximately 7-8 seconds.
  * @param size: the number of entries to be read
