@@ -7,6 +7,7 @@
 
 #include <stdio.h>
 
+__device__ int v = 0;
 
 __global__ void calculateConvolutionGPU(
         const float *images,
@@ -282,16 +283,17 @@ __global__ void calculateConvolutionGPU(
         int index = 0;
 
         for (int poolIndex = 0; poolIndex < 13 * 13 * 5; poolIndex++) {
-            sums[0] += maxPooled[poolIndex] * network[NET0 + poolIndex];
-            sums[1] += maxPooled[poolIndex] * network[NET1 + poolIndex];
-            sums[2] += maxPooled[poolIndex] * network[NET2 + poolIndex];
-            sums[3] += maxPooled[poolIndex] * network[NET3 + poolIndex];
-            sums[4] += maxPooled[poolIndex] * network[NET4 + poolIndex];
-            sums[5] += maxPooled[poolIndex] * network[NET5 + poolIndex];
-            sums[6] += maxPooled[poolIndex] * network[NET6 + poolIndex];
-            sums[7] += maxPooled[poolIndex] * network[NET7 + poolIndex];
-            sums[8] += maxPooled[poolIndex] * network[NET8 + poolIndex];
-            sums[9] += maxPooled[poolIndex] * network[NET9 + poolIndex];
+            float input = maxPooled[poolIndex];
+            sums[0] += input * network[NET0 + poolIndex];
+            sums[1] += input * network[NET1 + poolIndex];
+            sums[2] += input * network[NET2 + poolIndex];
+            sums[3] += input * network[NET3 + poolIndex];
+            sums[4] += input * network[NET4 + poolIndex];
+            sums[5] += input * network[NET5 + poolIndex];
+            sums[6] += input * network[NET6 + poolIndex];
+            sums[7] += input * network[NET7 + poolIndex];
+            sums[8] += input * network[NET8 + poolIndex];
+            sums[9] += input * network[NET9 + poolIndex];
         }
 
         if (sums[0] > max) {
@@ -337,8 +339,6 @@ __global__ void calculateConvolutionGPU(
 
         if (index == labels[imageIndex]) {
             atomicAdd(&fitness[networkIndex], 1.0f / 60000.0f);
-            // Change approach because there are too many atomic adds
-            // It's the same with d_big_fitness...
         }
     }
 }
