@@ -333,12 +333,11 @@ __global__ void calculateConvolutionGPU(
             index = 8;
         }
         if (sums[9] > max) {
-            max = sums[9];
             index = 9;
         }
 
         if (index == labels[imageIndex]) {
-            atomicAdd(&fitness[networkIndex], 1.0f / 60000.0f);
+            fitness[networkIndex] += 1.0f / 60000.0f;
         }
     }
 }
