@@ -4,6 +4,7 @@
 
 #include "output_utils.cuh"
 #include "../network/init_networks.cuh"
+#include "../defines.cuh"
 #include <stdio.h>
 
 void displayImage(const float *image, int size) {

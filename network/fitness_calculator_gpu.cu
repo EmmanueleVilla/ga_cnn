@@ -29,31 +29,29 @@ __global__ void calculateConvolutionGPU(
 
     unsigned int xx = threadIdx.x * 2;
     unsigned int yy = threadIdx.y * 2;
-    unsigned int pixel = xx * 28 + yy;
-    image[pixel] = images[imageIndex * 28 * 28 + pixel];
-    unsigned int pixel_1 = (xx + 1) * 28 + yy;
-    image[pixel_1] = images[imageIndex * 28 * 28 + pixel_1];
-    unsigned int pixel_2 = xx * 28 + yy + 1;
-    image[pixel_2] = images[imageIndex * 28 * 28 + pixel_2];
-    unsigned int pixel_3 = (xx + 1) * 28 + yy + 1;
-    image[pixel_3] = images[imageIndex * 28 * 28 + pixel_3];
+    unsigned int reused = xx * 28 + yy;
+    image[reused] = images[imageIndex * 28 * 28 + reused];
+    reused = (xx + 1) * 28 + yy;
+    image[reused] = images[imageIndex * 28 * 28 + reused];
+    reused = xx * 28 + yy + 1;
+    image[reused] = images[imageIndex * 28 * 28 + reused];
+    reused = (xx + 1) * 28 + yy + 1;
+    image[reused] = images[imageIndex * 28 * 28 + reused];
 
     // there are 8495 weights to be copied
     // I have 845 threads per block
     // so each thread will copy 11 weights
-    unsigned int tid = threadIdx.x + blockDim.x * (threadIdx.y + blockDim.y * threadIdx.z);
+    reused = threadIdx.x + blockDim.x * (threadIdx.y + blockDim.y * threadIdx.z);
     //printf("tid: %d\n", tid);
-    for (int w_i = 0; w_i < 20; w_i++) {
-        unsigned int w_index = tid + blockDim.x * blockDim.y * blockDim.z * w_i;
-        if (w_index < NUM_WEIGHTS) {
-            network[w_index] = networks[networkIndex * NUM_WEIGHTS + w_index];
+    for (xx = 0; xx < 20; xx++) {
+        xx = reused + blockDim.x * blockDim.y * blockDim.z * xx;
+        if (xx < NUM_WEIGHTS) {
+            network[xx] = networks[networkIndex * NUM_WEIGHTS + xx];
         }
     }
 
     __syncthreads();
 
-    int debugImageIndex = 25765;
-    int debugFilterIndex = 2;
     /*
     //TODO: DEBUG MODE - COPIED IMAGE
     if (threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == debugFilterIndex
@@ -101,17 +99,18 @@ __global__ void calculateConvolutionGPU(
         float sum = 0;
 
         // x = i, y = j
-        unsigned int x = (i + 1) * 2;
-        unsigned int y = (j + 1) * 2;
-        unsigned int start = filter * 9;
+        xx = (i + 1) * 2;
+        yy = (j + 1) * 2;
 
-        unsigned int i_1 = (x - 1) * 28;
-        unsigned int i_2 = x * 28;
-        unsigned int i_3 = (x + 1) * 28;
+        reused = filter * 9;
 
-        unsigned int j_1 = y - 1;
-        unsigned int j_2 = y;
-        unsigned int j_3 = y + 1;
+        unsigned int i_1 = (xx - 1) * 28;
+        unsigned int i_2 = xx * 28;
+        unsigned int i_3 = (xx + 1) * 28;
+
+        unsigned int j_1 = yy - 1;
+        unsigned int j_2 = yy;
+        unsigned int j_3 = yy + 1;
 
 /*
         //TODO: DEBUG MODE - FILTER
@@ -140,17 +139,17 @@ __global__ void calculateConvolutionGPU(
         }
 */
         sum = 0;
-        sum += image[i_1 + j_1] * network[start];
-        sum += image[i_1 + j_2] * network[start + 1];
-        sum += image[i_1 + j_3] * network[start + 2];
+        sum += image[i_1 + j_1] * network[reused];
+        sum += image[i_1 + j_2] * network[reused + 1];
+        sum += image[i_1 + j_3] * network[reused + 2];
 
-        sum += image[i_2 + j_1] * network[start + 3];
-        sum += image[i_2 + j_2] * network[start + 4];
-        sum += image[i_2 + j_3] * network[start + 5];
+        sum += image[i_2 + j_1] * network[reused + 3];
+        sum += image[i_2 + j_2] * network[reused + 4];
+        sum += image[i_2 + j_3] * network[reused + 5];
 
-        sum += image[i_3 + j_1] * network[start + 6];
-        sum += image[i_3 + j_2] * network[start + 7];
-        sum += image[i_3 + j_3] * network[start + 8];
+        sum += image[i_3 + j_1] * network[reused + 6];
+        sum += image[i_3 + j_2] * network[reused + 7];
+        sum += image[i_3 + j_3] * network[reused + 8];
 
         if (sum > pooled) {
             pooled = sum;
@@ -158,86 +157,86 @@ __global__ void calculateConvolutionGPU(
 
         // x = i + 1, y = j
 
-        x = (i + 1) * 2 + 1;
-        y = (j + 1) * 2;
+        xx = (i + 1) * 2 + 1;
+        yy = (j + 1) * 2;
 
-        i_1 = (x - 1) * 28;
-        i_2 = x * 28;
-        i_3 = (x + 1) * 28;
+        i_1 = (xx - 1) * 28;
+        i_2 = xx * 28;
+        i_3 = (xx + 1) * 28;
 
-        j_1 = y - 1;
-        j_2 = y;
-        j_3 = y + 1;
+        j_1 = yy - 1;
+        j_2 = yy;
+        j_3 = yy + 1;
 
         sum = 0;
-        sum += image[i_1 + j_1] * network[start];
-        sum += image[i_1 + j_2] * network[start + 1];
-        sum += image[i_1 + j_3] * network[start + 2];
+        sum += image[i_1 + j_1] * network[reused];
+        sum += image[i_1 + j_2] * network[reused + 1];
+        sum += image[i_1 + j_3] * network[reused + 2];
 
-        sum += image[i_2 + j_1] * network[start + 3];
-        sum += image[i_2 + j_2] * network[start + 4];
-        sum += image[i_2 + j_3] * network[start + 5];
+        sum += image[i_2 + j_1] * network[reused + 3];
+        sum += image[i_2 + j_2] * network[reused + 4];
+        sum += image[i_2 + j_3] * network[reused + 5];
 
-        sum += image[i_3 + j_1] * network[start + 6];
-        sum += image[i_3 + j_2] * network[start + 7];
-        sum += image[i_3 + j_3] * network[start + 8];
+        sum += image[i_3 + j_1] * network[reused + 6];
+        sum += image[i_3 + j_2] * network[reused + 7];
+        sum += image[i_3 + j_3] * network[reused + 8];
         if (sum > pooled) {
             pooled = sum;
         }
 
         // x = i, y = j + 1
 
-        x = (i + 1) * 2;
-        y = (j + 1) * 2 + 1;
+        xx = (i + 1) * 2;
+        yy = (j + 1) * 2 + 1;
 
-        i_1 = (x - 1) * 28;
-        i_2 = x * 28;
-        i_3 = (x + 1) * 28;
+        i_1 = (xx - 1) * 28;
+        i_2 = xx * 28;
+        i_3 = (xx + 1) * 28;
 
-        j_1 = y - 1;
-        j_2 = y;
-        j_3 = y + 1;
+        j_1 = yy - 1;
+        j_2 = yy;
+        j_3 = yy + 1;
         sum = 0;
-        sum += image[i_1 + j_1] * network[start];
-        sum += image[i_1 + j_2] * network[start + 1];
-        sum += image[i_1 + j_3] * network[start + 2];
+        sum += image[i_1 + j_1] * network[reused];
+        sum += image[i_1 + j_2] * network[reused + 1];
+        sum += image[i_1 + j_3] * network[reused + 2];
 
-        sum += image[i_2 + j_1] * network[start + 3];
-        sum += image[i_2 + j_2] * network[start + 4];
-        sum += image[i_2 + j_3] * network[start + 5];
+        sum += image[i_2 + j_1] * network[reused + 3];
+        sum += image[i_2 + j_2] * network[reused + 4];
+        sum += image[i_2 + j_3] * network[reused + 5];
 
-        sum += image[i_3 + j_1] * network[start + 6];
-        sum += image[i_3 + j_2] * network[start + 7];
-        sum += image[i_3 + j_3] * network[start + 8];
+        sum += image[i_3 + j_1] * network[reused + 6];
+        sum += image[i_3 + j_2] * network[reused + 7];
+        sum += image[i_3 + j_3] * network[reused + 8];
         if (sum > pooled) {
             pooled = sum;
         }
 
         // x = i + 1, y = j + 1
 
-        x = (i + 1) * 2 + 1;
-        y = (j + 1) * 2 + 1;
+        xx = (i + 1) * 2 + 1;
+        yy = (j + 1) * 2 + 1;
 
-        start = filter * 9;
-        i_1 = (x - 1) * 28;
-        i_2 = x * 28;
-        i_3 = (x + 1) * 28;
+        reused = filter * 9;
+        i_1 = (xx - 1) * 28;
+        i_2 = xx * 28;
+        i_3 = (xx + 1) * 28;
 
-        j_1 = y - 1;
-        j_2 = y;
-        j_3 = y + 1;
+        j_1 = yy - 1;
+        j_2 = yy;
+        j_3 = yy + 1;
         sum = 0;
-        sum += image[i_1 + j_1] * network[start];
-        sum += image[i_1 + j_2] * network[start + 1];
-        sum += image[i_1 + j_3] * network[start + 2];
+        sum += image[i_1 + j_1] * network[reused];
+        sum += image[i_1 + j_2] * network[reused + 1];
+        sum += image[i_1 + j_3] * network[reused + 2];
 
-        sum += image[i_2 + j_1] * network[start + 3];
-        sum += image[i_2 + j_2] * network[start + 4];
-        sum += image[i_2 + j_3] * network[start + 5];
+        sum += image[i_2 + j_1] * network[reused + 3];
+        sum += image[i_2 + j_2] * network[reused + 4];
+        sum += image[i_2 + j_3] * network[reused + 5];
 
-        sum += image[i_3 + j_1] * network[start + 6];
-        sum += image[i_3 + j_2] * network[start + 7];
-        sum += image[i_3 + j_3] * network[start + 8];
+        sum += image[i_3 + j_1] * network[reused + 6];
+        sum += image[i_3 + j_2] * network[reused + 7];
+        sum += image[i_3 + j_3] * network[reused + 8];
         if (sum > pooled) {
             pooled = sum;
         }
@@ -248,7 +247,7 @@ __global__ void calculateConvolutionGPU(
     __syncthreads();
 
     /*
-    //TODO: DEBUG max pooled image: wrong
+    //TODO: DEBUG max pooled image
     if (threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == debugFilterIndex
         && blockIdx.x == debugImageIndex && blockIdx.y == 0 && blockIdx.z == 0
             ) {
@@ -278,10 +277,14 @@ __global__ void calculateConvolutionGPU(
     // Only one thread per block is responsible to calculate the dense layer
     if (threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == 0) {
 
-        float sums[10];
-        float max = -999;
-        int index = 0;
+        __shared__ float sums[10];
+        __shared__ float max;
+        __shared__ int index;
 
+        max = -999;
+        index = 0;
+
+#pragma unroll
         for (int poolIndex = 0; poolIndex < 13 * 13 * 5; poolIndex++) {
             float input = maxPooled[poolIndex];
             sums[0] += input * network[NET0 + poolIndex];

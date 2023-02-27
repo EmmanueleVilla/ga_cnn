@@ -89,6 +89,7 @@ bool handle(int argc, char **argv) {
             }
         }
         printf("%d) Max fitness: %f, generation time: %6.3ld\n", generation++, maxFitness, clock() - start);
+        break;
     }
 
     return true;
