@@ -19,7 +19,6 @@ __global__ void calculateConvolutionGPU(
 ) {
     unsigned int imageIndex = blockIdx.x;
     unsigned int networkIndex = blockIdx.y;
-    unsigned int filter = threadIdx.z;
 
     __shared__ float image[IMAGE_INPUT_SIZE];
     __shared__ float network[NUM_WEIGHTS];
@@ -102,7 +101,6 @@ __global__ void calculateConvolutionGPU(
         xx = (threadIdx.x + 1) * 2;
         yy = (threadIdx.y + 1) * 2;
 
-        reused = filter * 9;
 
         unsigned int i_1 = (xx - 1) * 28;
         unsigned int i_2 = i_1 + 28;
@@ -140,78 +138,82 @@ __global__ void calculateConvolutionGPU(
             printf("\n");
         }
 */
-        sum = 0;
-        sum += image[i_1 + j_1] * network[reused];
-        sum += image[i_1 + j_2] * network[reused + 1];
-        sum += image[i_1 + j_3] * network[reused + 2];
+#pragma unroll
+        for (reused = 0; reused < 45; reused += 9) {
+            pooled = 0;
+            sum = 0;
+            sum += image[i_1 + j_1] * network[reused];
+            sum += image[i_1 + j_2] * network[reused + 1];
+            sum += image[i_1 + j_3] * network[reused + 2];
 
-        sum += image[i_2 + j_1] * network[reused + 3];
-        sum += image[i_2 + j_2] * network[reused + 4];
-        sum += image[i_2 + j_3] * network[reused + 5];
+            sum += image[i_2 + j_1] * network[reused + 3];
+            sum += image[i_2 + j_2] * network[reused + 4];
+            sum += image[i_2 + j_3] * network[reused + 5];
 
-        sum += image[i_3 + j_1] * network[reused + 6];
-        sum += image[i_3 + j_2] * network[reused + 7];
-        sum += image[i_3 + j_3] * network[reused + 8];
+            sum += image[i_3 + j_1] * network[reused + 6];
+            sum += image[i_3 + j_2] * network[reused + 7];
+            sum += image[i_3 + j_3] * network[reused + 8];
 
-        if (sum > pooled) {
-            pooled = sum;
+            if (sum > pooled) {
+                pooled = sum;
+            }
+
+            // x = i + 1, y = j
+
+            sum = 0;
+            sum += image[i_2 + j_1] * network[reused];
+            sum += image[i_2 + j_2] * network[reused + 1];
+            sum += image[i_2 + j_3] * network[reused + 2];
+
+            sum += image[i_3 + j_1] * network[reused + 3];
+            sum += image[i_3 + j_2] * network[reused + 4];
+            sum += image[i_3 + j_3] * network[reused + 5];
+
+            sum += image[i_4 + j_1] * network[reused + 6];
+            sum += image[i_4 + j_2] * network[reused + 7];
+            sum += image[i_4 + j_3] * network[reused + 8];
+            if (sum > pooled) {
+                pooled = sum;
+            }
+
+            // x = i, y = j + 1
+
+            sum = 0;
+            sum += image[i_1 + j_2] * network[reused];
+            sum += image[i_1 + j_3] * network[reused + 1];
+            sum += image[i_1 + j_4] * network[reused + 2];
+
+            sum += image[i_2 + j_2] * network[reused + 3];
+            sum += image[i_2 + j_3] * network[reused + 4];
+            sum += image[i_2 + j_4] * network[reused + 5];
+
+            sum += image[i_3 + j_2] * network[reused + 6];
+            sum += image[i_3 + j_3] * network[reused + 7];
+            sum += image[i_3 + j_4] * network[reused + 8];
+            if (sum > pooled) {
+                pooled = sum;
+            }
+
+            // x = i + 1, y = j + 1
+
+            sum = 0;
+            sum += image[i_2 + j_2] * network[reused];
+            sum += image[i_2 + j_3] * network[reused + 1];
+            sum += image[i_2 + j_4] * network[reused + 2];
+
+            sum += image[i_3 + j_2] * network[reused + 3];
+            sum += image[i_3 + j_3] * network[reused + 4];
+            sum += image[i_3 + j_4] * network[reused + 5];
+
+            sum += image[i_4 + j_2] * network[reused + 6];
+            sum += image[i_4 + j_3] * network[reused + 7];
+            sum += image[i_4 + j_4] * network[reused + 8];
+            if (sum > pooled) {
+                pooled = sum;
+            }
+
+            maxPooled[reused / 9 * 13 * 13 + threadIdx.x * 13 + threadIdx.y] = pooled;
         }
-
-        // x = i + 1, y = j
-
-        sum = 0;
-        sum += image[i_2 + j_1] * network[reused];
-        sum += image[i_2 + j_2] * network[reused + 1];
-        sum += image[i_2 + j_3] * network[reused + 2];
-
-        sum += image[i_3 + j_1] * network[reused + 3];
-        sum += image[i_3 + j_2] * network[reused + 4];
-        sum += image[i_3 + j_3] * network[reused + 5];
-
-        sum += image[i_4 + j_1] * network[reused + 6];
-        sum += image[i_4 + j_2] * network[reused + 7];
-        sum += image[i_4 + j_3] * network[reused + 8];
-        if (sum > pooled) {
-            pooled = sum;
-        }
-
-        // x = i, y = j + 1
-
-        sum = 0;
-        sum += image[i_1 + j_2] * network[reused];
-        sum += image[i_1 + j_3] * network[reused + 1];
-        sum += image[i_1 + j_4] * network[reused + 2];
-
-        sum += image[i_2 + j_2] * network[reused + 3];
-        sum += image[i_2 + j_3] * network[reused + 4];
-        sum += image[i_2 + j_4] * network[reused + 5];
-
-        sum += image[i_3 + j_2] * network[reused + 6];
-        sum += image[i_3 + j_3] * network[reused + 7];
-        sum += image[i_3 + j_4] * network[reused + 8];
-        if (sum > pooled) {
-            pooled = sum;
-        }
-
-        // x = i + 1, y = j + 1
-
-        sum = 0;
-        sum += image[i_2 + j_2] * network[reused];
-        sum += image[i_2 + j_3] * network[reused + 1];
-        sum += image[i_2 + j_4] * network[reused + 2];
-
-        sum += image[i_3 + j_2] * network[reused + 3];
-        sum += image[i_3 + j_3] * network[reused + 4];
-        sum += image[i_3 + j_4] * network[reused + 5];
-
-        sum += image[i_4 + j_2] * network[reused + 6];
-        sum += image[i_4 + j_3] * network[reused + 7];
-        sum += image[i_4 + j_4] * network[reused + 8];
-        if (sum > pooled) {
-            pooled = sum;
-        }
-
-        maxPooled[filter * 13 * 13 + threadIdx.x * 13 + threadIdx.y] = pooled;
     }
 
     __syncthreads();
@@ -340,7 +342,8 @@ void calculateFitnessGPU(
 // To be able to sync the numFilters and avoid saving the conv in shared memory,
 // I could launch 13x13x5 threads, so < 1024
 // But I use 14x14 to parallelize the copy of the 28x28 image in shared memory
-    dim3 block(14, 14, NUM_FILTERS);
+// REFACTOR: launch 14x14 threads instead of 14x14x5 to reduce block registers usage
+    dim3 block(14, 14);
 
     calculateConvolutionGPU<<<grid, block>>>(
             d_images,
