@@ -43,6 +43,8 @@ __global__ void calculateConvolutionGPU(
     // so each thread will copy 11 weights
     reused = threadIdx.x + blockDim.x * (threadIdx.y + blockDim.y * threadIdx.z);
     //printf("tid: %d\n", tid);
+
+#pragma unroll
     for (xx = 0; xx < 20; xx++) {
         xx = reused + blockDim.x * blockDim.y * blockDim.z * xx;
         if (xx < NUM_WEIGHTS) {
