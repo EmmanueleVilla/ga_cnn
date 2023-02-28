@@ -21,7 +21,7 @@ __global__ void calculateConvolutionGPU(
     unsigned int networkIndex = blockIdx.y;
 
     __shared__ float image[IMAGE_INPUT_SIZE];
-    __shared__ float network[NUM_WEIGHTS];
+    __shared__ float network[845];
     __shared__ float maxPooled[POOLED_SIZE];
 
     unsigned int xx = threadIdx.x * 2;
@@ -41,12 +41,9 @@ __global__ void calculateConvolutionGPU(
     reused = threadIdx.x + blockDim.x * (threadIdx.y + blockDim.y * threadIdx.z);
     //printf("tid: %d\n", tid);
 
-#pragma unroll
-    for (xx = 0; xx < 20; xx++) {
-        xx = reused + blockDim.x * blockDim.y * blockDim.z * xx;
-        if (xx < NUM_WEIGHTS) {
-            network[xx] = networks[networkIndex * NUM_WEIGHTS + xx];
-        }
+    // copy the first 45 weights (the filters)
+    if (threadIdx.x < 45) {
+        network[threadIdx.x] = networks[networkIndex * NUM_WEIGHTS + threadIdx.x];
     }
 
     __syncthreads();
@@ -246,30 +243,45 @@ __global__ void calculateConvolutionGPU(
         }
     }
 */
-    // Only one thread per block is responsible to calculate the dense layer
-    if (threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == 0) {
 
-        __shared__ float sums[10];
-        __shared__ float max;
-        __shared__ int index;
+    __shared__ float sums[10];
+    __shared__ float max;
+    __shared__ int index;
 
-        max = -999;
-        index = 0;
+    max = -999;
+    index = 0;
 
 #pragma unroll
-        for (int poolIndex = 0; poolIndex < 13 * 13 * 5; poolIndex++) {
-            float input = maxPooled[poolIndex];
-            sums[0] += input * network[NET0 + poolIndex];
-            sums[1] += input * network[NET1 + poolIndex];
-            sums[2] += input * network[NET2 + poolIndex];
-            sums[3] += input * network[NET3 + poolIndex];
-            sums[4] += input * network[NET4 + poolIndex];
-            sums[5] += input * network[NET5 + poolIndex];
-            sums[6] += input * network[NET6 + poolIndex];
-            sums[7] += input * network[NET7 + poolIndex];
-            sums[8] += input * network[NET8 + poolIndex];
-            sums[9] += input * network[NET9 + poolIndex];
+    for (yy = 0; yy < 10; yy++) {
+        // I have 13*13=169 threads.
+        // I want to copy 845 values of the network to shared memory
+        // So each thread must copy 845/169=5 values
+        xx = threadIdx.x * blockDim.x + threadIdx.y;
+        reused = networkIndex * NUM_WEIGHTS + 45 + yy * 13 * 13 * 5;
+        network[xx] = networks[reused + xx];
+        xx += 13 * 13 + 13;
+        network[xx] = networks[reused + xx];
+        xx += 13 * 13 + 13;
+        network[xx] = networks[reused + xx];
+        xx += 13 * 13 + 13;
+        network[xx] = networks[reused + xx];
+        xx += 13 * 13 + 13;
+        if (xx < 845) {
+            network[xx] = networks[reused + xx];
         }
+        __syncthreads();
+
+        if (threadIdx.x == 0 && threadIdx.y == 0) {
+#pragma unroll
+            for (int poolIndex = 0; poolIndex < 13 * 13 * 5; poolIndex++) {
+                sums[yy] += maxPooled[poolIndex] * network[poolIndex];
+            }
+        }
+        __syncthreads();
+    }
+
+    // Only one thread per block is responsible to calculate the dense layer
+    if (threadIdx.x == 0 && threadIdx.y == 0) {
 
         if (sums[0] > max) {
             max = sums[0];
