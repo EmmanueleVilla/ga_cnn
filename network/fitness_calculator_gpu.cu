@@ -256,19 +256,20 @@ __global__ void calculateConvolutionGPU(
         // I have 13*13=169 threads.
         // I want to copy 845 values of the network to shared memory
         // So each thread must copy 845/169=5 values
-        xx = threadIdx.x * blockDim.x + threadIdx.y;
+        xx = 5 * (threadIdx.x * blockDim.x + threadIdx.y);
+        if (xx >= 845) {
+            continue;
+        }
         reused = networkIndex * NUM_WEIGHTS + 45 + yy * 13 * 13 * 5;
         network[xx] = networks[reused + xx];
-        xx += 13 * 13 + 13;
+        xx++;
         network[xx] = networks[reused + xx];
-        xx += 13 * 13 + 13;
+        xx++;
         network[xx] = networks[reused + xx];
-        xx += 13 * 13 + 13;
+        xx++;
         network[xx] = networks[reused + xx];
-        xx += 13 * 13 + 13;
-        if (xx < 845) {
-            network[xx] = networks[reused + xx];
-        }
+        xx++;
+        network[xx] = networks[reused + xx];
         __syncthreads();
 
         if (threadIdx.x == 0 && threadIdx.y == 0) {
@@ -281,7 +282,7 @@ __global__ void calculateConvolutionGPU(
     }
 
     // Only one thread per block is responsible to calculate the dense layer
-    if (threadIdx.x == 0 && threadIdx.y == 0) {
+    if (threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == 0) {
 
         if (sums[0] > max) {
             max = sums[0];
