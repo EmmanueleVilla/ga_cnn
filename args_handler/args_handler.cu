@@ -29,7 +29,9 @@ bool handle(int argc, char **argv) {
     enum MODE argMode = NONE;
     int size = -1;
     int populationSize = -1;
-    extractArgs(argc, argv, argMode, size, populationSize);
+    int gensCount = -1;
+    bool debug = false;
+    extractArgs(argc, argv, argMode, size, populationSize, gensCount, debug);
 
     if (argMode == NONE) {
         printf("Mode not set. Use --mode or -m to set the mode.\n");
@@ -37,12 +39,16 @@ bool handle(int argc, char **argv) {
     }
 
     if (size < 1 || size > 60000) {
-        printf("Data size not set or invalid. Must be between 1 and 60000. Use --dataSize or -s to set the size.\n");
+        printf("Data size not set or invalid. Must be between 1 and 60000. Use --data-size or -s to set the size.\n");
         return false;
     }
 
     if (populationSize < 1) {
-        printf("Population size not set or invalid. Must be a positive number. Use --popSize or -p to set the size.\n");
+        printf("Population size not set or invalid. Must be a positive number. Use --pop-size or -p to set the size.\n");
+        return false;
+    }
+    if (gensCount < 0) {
+        printf("Generation count not set or invalid. Must be a positive number. Use --gens-count or -g to set the size.\n");
         return false;
     }
 
@@ -78,8 +84,7 @@ bool handle(int argc, char **argv) {
         cudaMemcpy(d_images, images, size * 28 * 28 * sizeof(float), H2D);
         cudaMemcpy(d_labels, labels, size * sizeof(int), H2D);
     }
-
-    while (maxFitness < 95) {
+    while (generation < gensCount) {
         start = clock();
         calculateFitness(labels, images, networks, populationSize, size, fitness, d_labels, d_images, argMode);
         evolve(networks, fitness, populationSize, argMode);
@@ -89,7 +94,6 @@ bool handle(int argc, char **argv) {
             }
         }
         printf("%d) Max fitness: %f, generation time: %6.3ld\n", generation++, maxFitness, clock() - start);
-        break;
     }
 
     return true;

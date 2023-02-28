@@ -2,7 +2,7 @@
 #include "args_handler/args_handler.cuh"
 
 int main(int argc, char **argv) {
-
+    cudaDeviceReset();
     if (!handle(argc, argv)) {
         printf("Parameters not recognized. Use -h or --help for help.\n");
     }

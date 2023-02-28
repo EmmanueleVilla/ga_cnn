@@ -1,5 +1,8 @@
 cmake_minimum_required(VERSION 3.24)
-project(ga_cnn CUDA)
+project(ga_cnn LANGUAGES CUDA CXX)
+
+include(CHECKLANGUAGE)
+check_language(CUDA)
 
 set(CMAKE_CUDA_STANDARD 17)
 
@@ -9,3 +12,5 @@ add_executable(ga_cnn main.cu args_handler/args_handler_help.cu args_handler/arg
 
 set_target_properties(ga_cnn PROPERTIES
         CUDA_SEPARABLE_COMPILATION ON)
+
+        
