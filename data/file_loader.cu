@@ -10,19 +10,22 @@
  * @return
  */
 FILE *readFile() {
-    FILE *stream = nullptr;
-    stream = fopen("C:\\Users\\emman\\CLionProjects\\ga-cnn\\data\\mnist_train.csv", "r");
-    if (stream != nullptr) {
-        printf("The file '../../data/mnist_train.csv' was opened\n");
-    } else {
-        printf("The file '../../data/mnist_train.csv' was not opened\n");
-        stream = fopen(".\\mnist_train.csv", "r");
+    const char *paths[] = {
+            "C:\\Users\\emman\\CLionProjects\\ga-cnn\\data\\mnist_train.csv",
+            ".\\mnist_train.csv",
+            "/home/emmanuele/ga_cnn/data/mnist_train.csv",
+            "./mnist_train.csv"
+    };
+
+    //foreach path in paths
+    for (int i = 0; i < 4; i++) {
+        FILE *stream = fopen(paths[i], "r");
         if (stream != nullptr) {
-            printf("The fallback file 'mnist_train.csv' was opened\n");
+            printf("The file '%s' was opened\n", paths[i]);
+            return stream;
         } else {
-            stream = fopen("/home/emmanuele/ga_cnn/data/mnist_train.csv", "r");
-            printf("The fallback file 'mnist_train.csv' was not opened\n");
+            printf("The file '%s' was not opened\n", paths[i]);
         }
     }
-    return stream;
+    return nullptr;
 }
