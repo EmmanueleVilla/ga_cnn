@@ -21,7 +21,7 @@ __global__ void calculateConvolutionGPU(
     unsigned int networkIndex = blockIdx.y;
 
     __shared__ float image[IMAGE_INPUT_SIZE];
-    __shared__ float network[845];
+    __shared__ float network[1690];
     __shared__ float maxPooled[POOLED_SIZE];
 
     unsigned int xx = threadIdx.x * 2;
@@ -252,30 +252,30 @@ __global__ void calculateConvolutionGPU(
     index = 0;
 
 #pragma unroll
-    for (yy = 0; yy < 10; yy++) {
+    for (yy = 0; yy < 5; yy++) {
         // I have 13*13=169 threads.
-        // I want to copy 845 values of the network to shared memory
-        // So each thread must copy 845/169=5 values
-        xx = 5 * (threadIdx.x * blockDim.x + threadIdx.y);
-        if (xx >= 845) {
-            continue;
+        // I want to copy 1690 values of the network to shared memory
+        // So each thread must copy 1690/169=10 values
+        reused = networkIndex * NUM_WEIGHTS + 45 + yy * 13 * 13 * 10;
+        for (int start = 0; start < 1690; start += 169) {
+            network[threadIdx.x * 13 + threadIdx.y + start] = networks[reused + threadIdx.x * 13 + threadIdx.y + start];
         }
-        reused = networkIndex * NUM_WEIGHTS + 45 + yy * 13 * 13 * 5;
-        network[xx] = networks[reused + xx];
-        xx++;
-        network[xx] = networks[reused + xx];
-        xx++;
-        network[xx] = networks[reused + xx];
-        xx++;
-        network[xx] = networks[reused + xx];
-        xx++;
-        network[xx] = networks[reused + xx];
+
         __syncthreads();
 
         if (threadIdx.x == 0 && threadIdx.y == 0) {
 #pragma unroll
-            for (int poolIndex = 0; poolIndex < 13 * 13 * 5; poolIndex++) {
-                sums[yy] += maxPooled[poolIndex] * network[poolIndex];
+            for (int poolIndex = 0; poolIndex < 13 * 13; poolIndex++) {
+                sums[0] += maxPooled[poolIndex] * network[poolIndex];
+                sums[1] += maxPooled[poolIndex] * network[poolIndex + 169];
+                sums[2] += maxPooled[poolIndex] * network[poolIndex + 169 * 2];
+                sums[3] += maxPooled[poolIndex] * network[poolIndex + 169 * 3];
+                sums[4] += maxPooled[poolIndex] * network[poolIndex + 169 * 4];
+                sums[5] += maxPooled[poolIndex] * network[poolIndex + 169 * 5];
+                sums[6] += maxPooled[poolIndex] * network[poolIndex + 169 * 6];
+                sums[7] += maxPooled[poolIndex] * network[poolIndex + 169 * 7];
+                sums[8] += maxPooled[poolIndex] * network[poolIndex + 169 * 8];
+                sums[9] += maxPooled[poolIndex] * network[poolIndex + 169 * 9];
             }
         }
         __syncthreads();
@@ -325,7 +325,7 @@ __global__ void calculateConvolutionGPU(
         }
 
         if (index == labels[imageIndex]) {
-            fitness[networkIndex] += 1.0f / 60000.0f;
+            atomicAdd(&fitness[networkIndex], 1.0f / 60000.0f);
         }
     }
 }
