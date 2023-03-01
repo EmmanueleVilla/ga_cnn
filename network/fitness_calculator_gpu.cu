@@ -13,36 +13,31 @@ __global__ void calculateConvolutionGPU(
         const float *images,
         const float *networks,
         const int *labels,
-        float *fitness,
-        bool debug
+        float *fitness
 ) {
-    unsigned int imageIndex = blockIdx.x;
-    unsigned int networkIndex = blockIdx.y;
-
     __shared__ float image[IMAGE_INPUT_SIZE];
     __shared__ float network[45];
     __shared__ float maxPooled[POOLED_SIZE];
 
-    unsigned int xx = threadIdx.x * 2;
-    unsigned int yy = threadIdx.y * 2;
+    unsigned int xx;
+    unsigned int yy;
     unsigned int reused;
 
     // I have 13x13=169 threads, so I can copy 169 pixels at once
     // but the image is 28x28=784 pixels, so I need to copy 784/169=4.6 times
     // each thread will copy 5 pixels
-    int start;
 #pragma unroll
-    for (start = 0; start < 845; start += 169) {
-        reused = threadIdx.x * 13 + threadIdx.y + start;
-        if (reused < 784) {
-            image[threadIdx.x * 13 + threadIdx.y + start] = images[imageIndex * 28 * 28 + reused];
-        }
+    for (xx = 0; xx < 845; xx += 169) {
+        reused = threadIdx.x * 13 + threadIdx.y + xx;
+        //if (reused < 784) {
+        image[threadIdx.x * 13 + threadIdx.y + xx] = images[blockIdx.x * 28 * 28 + reused];
+        //}
     }
 
     // copy the first 45 weights (the filters)
-    start = threadIdx.x * 13 + threadIdx.y;
-    if (start < 45) {
-        network[start] = networks[networkIndex * NUM_WEIGHTS + start];
+    xx = threadIdx.x * 13 + threadIdx.y;
+    if (xx < 45) {
+        network[xx] = networks[blockIdx.y * NUM_WEIGHTS + xx];
     }
 
     __syncthreads();
@@ -102,11 +97,6 @@ __global__ void calculateConvolutionGPU(
         unsigned int i_3 = i_2 + 28;
         unsigned int i_4 = i_3 + 28;
 
-        unsigned int j_1 = yy - 1;
-        unsigned int j_2 = yy;
-        unsigned int j_3 = yy + 1;
-        unsigned int j_4 = yy + 2;
-
         /*
         if (debug && threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == 0
             && blockIdx.x == 8 && blockIdx.y == 8 && blockIdx.z == 0
@@ -137,17 +127,17 @@ __global__ void calculateConvolutionGPU(
         for (reused = 0; reused < 45; reused += 9) {
             pooled = 0;
             sum = 0;
-            sum += image[i_1 + j_1] * network[reused];
-            sum += image[i_1 + j_2] * network[reused + 1];
-            sum += image[i_1 + j_3] * network[reused + 2];
+            sum += image[i_1 + (yy - 1)] * network[reused];
+            sum += image[i_1 + yy] * network[reused + 1];
+            sum += image[i_1 + (yy + 1)] * network[reused + 2];
 
-            sum += image[i_2 + j_1] * network[reused + 3];
-            sum += image[i_2 + j_2] * network[reused + 4];
-            sum += image[i_2 + j_3] * network[reused + 5];
+            sum += image[i_2 + (yy - 1)] * network[reused + 3];
+            sum += image[i_2 + yy] * network[reused + 4];
+            sum += image[i_2 + (yy + 1)] * network[reused + 5];
 
-            sum += image[i_3 + j_1] * network[reused + 6];
-            sum += image[i_3 + j_2] * network[reused + 7];
-            sum += image[i_3 + j_3] * network[reused + 8];
+            sum += image[i_3 + (yy - 1)] * network[reused + 6];
+            sum += image[i_3 + yy] * network[reused + 7];
+            sum += image[i_3 + (yy + 1)] * network[reused + 8];
 
             if (sum > pooled) {
                 pooled = sum;
@@ -156,17 +146,17 @@ __global__ void calculateConvolutionGPU(
             // x = i + 1, y = j
 
             sum = 0;
-            sum += image[i_2 + j_1] * network[reused];
-            sum += image[i_2 + j_2] * network[reused + 1];
-            sum += image[i_2 + j_3] * network[reused + 2];
+            sum += image[i_2 + (yy - 1)] * network[reused];
+            sum += image[i_2 + yy] * network[reused + 1];
+            sum += image[i_2 + (yy + 1)] * network[reused + 2];
 
-            sum += image[i_3 + j_1] * network[reused + 3];
-            sum += image[i_3 + j_2] * network[reused + 4];
-            sum += image[i_3 + j_3] * network[reused + 5];
+            sum += image[i_3 + (yy - 1)] * network[reused + 3];
+            sum += image[i_3 + yy] * network[reused + 4];
+            sum += image[i_3 + (yy + 1)] * network[reused + 5];
 
-            sum += image[i_4 + j_1] * network[reused + 6];
-            sum += image[i_4 + j_2] * network[reused + 7];
-            sum += image[i_4 + j_3] * network[reused + 8];
+            sum += image[i_4 + (yy - 1)] * network[reused + 6];
+            sum += image[i_4 + yy] * network[reused + 7];
+            sum += image[i_4 + (yy + 1)] * network[reused + 8];
             if (sum > pooled) {
                 pooled = sum;
             }
@@ -174,17 +164,17 @@ __global__ void calculateConvolutionGPU(
             // x = i, y = j + 1
 
             sum = 0;
-            sum += image[i_1 + j_2] * network[reused];
-            sum += image[i_1 + j_3] * network[reused + 1];
-            sum += image[i_1 + j_4] * network[reused + 2];
+            sum += image[i_1 + yy] * network[reused];
+            sum += image[i_1 + (yy + 1)] * network[reused + 1];
+            sum += image[i_1 + (yy + 2)] * network[reused + 2];
 
-            sum += image[i_2 + j_2] * network[reused + 3];
-            sum += image[i_2 + j_3] * network[reused + 4];
-            sum += image[i_2 + j_4] * network[reused + 5];
+            sum += image[i_2 + yy] * network[reused + 3];
+            sum += image[i_2 + (yy + 1)] * network[reused + 4];
+            sum += image[i_2 + (yy + 2)] * network[reused + 5];
 
-            sum += image[i_3 + j_2] * network[reused + 6];
-            sum += image[i_3 + j_3] * network[reused + 7];
-            sum += image[i_3 + j_4] * network[reused + 8];
+            sum += image[i_3 + yy] * network[reused + 6];
+            sum += image[i_3 + (yy + 1)] * network[reused + 7];
+            sum += image[i_3 + (yy + 2)] * network[reused + 8];
             if (sum > pooled) {
                 pooled = sum;
             }
@@ -192,17 +182,17 @@ __global__ void calculateConvolutionGPU(
             // x = i + 1, y = j + 1
 
             sum = 0;
-            sum += image[i_2 + j_2] * network[reused];
-            sum += image[i_2 + j_3] * network[reused + 1];
-            sum += image[i_2 + j_4] * network[reused + 2];
+            sum += image[i_2 + yy] * network[reused];
+            sum += image[i_2 + (yy + 1)] * network[reused + 1];
+            sum += image[i_2 + (yy + 2)] * network[reused + 2];
 
-            sum += image[i_3 + j_2] * network[reused + 3];
-            sum += image[i_3 + j_3] * network[reused + 4];
-            sum += image[i_3 + j_4] * network[reused + 5];
+            sum += image[i_3 + yy] * network[reused + 3];
+            sum += image[i_3 + (yy + 1)] * network[reused + 4];
+            sum += image[i_3 + (yy + 2)] * network[reused + 5];
 
-            sum += image[i_4 + j_2] * network[reused + 6];
-            sum += image[i_4 + j_3] * network[reused + 7];
-            sum += image[i_4 + j_4] * network[reused + 8];
+            sum += image[i_4 + yy] * network[reused + 6];
+            sum += image[i_4 + (yy + 1)] * network[reused + 7];
+            sum += image[i_4 + (yy + 2)] * network[reused + 8];
             if (sum > pooled) {
                 pooled = sum;
             }
@@ -254,7 +244,7 @@ __global__ void calculateConvolutionGPU(
         // I have 13*13=169 threads.
         // I want to copy 1690 values of the network to shared memory
         // So each thread must copy 1690/169=10 values
-        reused = networkIndex * NUM_WEIGHTS + 45 + yy * 13 * 13 * 10;
+        reused = blockIdx.y * NUM_WEIGHTS + 45 + yy * 13 * 13 * 10;
         for (start = 0; start < 1690; start += 169) {
             network[threadIdx.x * 13 + threadIdx.y + start] = networks[reused + threadIdx.x * 13 + threadIdx.y + start];
         }
@@ -280,19 +270,20 @@ __global__ void calculateConvolutionGPU(
     }
      */
     if (threadIdx.x == 0 && threadIdx.y == 0) {
+        yy = blockIdx.y * NUM_WEIGHTS;
 #pragma unroll
         for (xx = 0; xx < 13 * 13 * 5; xx++) {
             float input = maxPooled[xx];
-            sums[0] += input * networks[networkIndex * NUM_WEIGHTS + NET0 + xx];
-            sums[1] += input * networks[networkIndex * NUM_WEIGHTS + NET1 + xx];
-            sums[2] += input * networks[networkIndex * NUM_WEIGHTS + NET2 + xx];
-            sums[3] += input * networks[networkIndex * NUM_WEIGHTS + NET3 + xx];
-            sums[4] += input * networks[networkIndex * NUM_WEIGHTS + NET4 + xx];
-            sums[5] += input * networks[networkIndex * NUM_WEIGHTS + NET5 + xx];
-            sums[6] += input * networks[networkIndex * NUM_WEIGHTS + NET6 + xx];
-            sums[7] += input * networks[networkIndex * NUM_WEIGHTS + NET7 + xx];
-            sums[8] += input * networks[networkIndex * NUM_WEIGHTS + NET8 + xx];
-            sums[9] += input * networks[networkIndex * NUM_WEIGHTS + NET9 + xx];
+            sums[0] += input * networks[yy + NET0 + xx];
+            sums[1] += input * networks[yy + NET1 + xx];
+            sums[2] += input * networks[yy + NET2 + xx];
+            sums[3] += input * networks[yy + NET3 + xx];
+            sums[4] += input * networks[yy + NET4 + xx];
+            sums[5] += input * networks[yy + NET5 + xx];
+            sums[6] += input * networks[yy + NET6 + xx];
+            sums[7] += input * networks[yy + NET7 + xx];
+            sums[8] += input * networks[yy + NET8 + xx];
+            sums[9] += input * networks[yy + NET9 + xx];
         }
 
         if (sums[0] > max) {
@@ -335,8 +326,8 @@ __global__ void calculateConvolutionGPU(
             index = 9;
         }
 
-        if (index == labels[imageIndex]) {
-            atomicAdd(&fitness[networkIndex], 1.0f / 60000.0f);
+        if (index == labels[blockIdx.x]) {
+            atomicAdd(&fitness[blockIdx.y], 1.0f / 600.0f);
         }
     }
 }
@@ -373,8 +364,7 @@ void calculateFitnessGPU(
             d_images,
             d_networks,
             d_labels,
-            d_fitness,
-            false
+            d_fitness
     );
 
     CHECK(cudaDeviceSynchronize());
