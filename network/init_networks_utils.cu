@@ -3,7 +3,6 @@
 //
 
 #include "init_networks_utils.cuh"
-#include <corecrt_math.h>
 
 float randGaussian() {
     float a = (float) rand() / (float) RAND_MAX;
