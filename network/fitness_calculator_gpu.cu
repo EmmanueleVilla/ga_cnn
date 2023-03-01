@@ -136,9 +136,7 @@ __global__ void calculateConvolutionGPU(
         sum += image[i_1 + 56 + yy] * network[reused + 7];
         sum += image[i_1 + 56 + yy + 1] * network[reused + 8];
 
-        if (sum > pooled) {
-            pooled = sum;
-        }
+        pooled = max(sum, pooled);
 
         // x = i + 1, y = j
 
@@ -154,9 +152,8 @@ __global__ void calculateConvolutionGPU(
         sum += image[i_1 + 84 + yy - 1] * network[reused + 6];
         sum += image[i_1 + 84 + yy] * network[reused + 7];
         sum += image[i_1 + 84 + yy + 1] * network[reused + 8];
-        if (sum > pooled) {
-            pooled = sum;
-        }
+
+        pooled = max(sum, pooled);
 
         // x = i, y = j + 1
 
@@ -172,9 +169,8 @@ __global__ void calculateConvolutionGPU(
         sum += image[i_1 + 56 + yy] * network[reused + 6];
         sum += image[i_1 + 56 + yy + 1] * network[reused + 7];
         sum += image[i_1 + 56 + yy + 2] * network[reused + 8];
-        if (sum > pooled) {
-            pooled = sum;
-        }
+
+        pooled = max(sum, pooled);
 
         // x = i + 1, y = j + 1
 
@@ -190,9 +186,8 @@ __global__ void calculateConvolutionGPU(
         sum += image[i_1 + 84 + yy] * network[reused + 6];
         sum += image[i_1 + 84 + yy + 1] * network[reused + 7];
         sum += image[i_1 + 84 + yy + 2] * network[reused + 8];
-        if (sum > pooled) {
-            pooled = sum;
-        }
+
+        pooled = max(sum, pooled);
 
         maxPooled[reused / 9 * 13 * 13 + threadIdx.x * 13 + threadIdx.y] = pooled;
     }
