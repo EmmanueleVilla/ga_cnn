@@ -82,124 +82,121 @@ __global__ void calculateConvolutionGPU(
     // (i, j), (i+1, j), (i, j+1), (i+1, j+1)
     // and then it will take only the maximum value
     // I skip the two threads used to copy the image
-    if (threadIdx.x < 13 && threadIdx.y < 13) {
+    //if (threadIdx.x < 13 && threadIdx.y < 13) {
 
-        float pooled = 0;
-        float sum = 0;
+    float pooled = 0;
+    float sum = 0;
 
-        // x = i, y = j
-        xx = (threadIdx.x + 1) * 2;
-        yy = (threadIdx.y + 1) * 2;
+    // x = i, y = j
+    xx = (threadIdx.x + 1) * 2;
+    yy = (threadIdx.y + 1) * 2;
 
 
-        unsigned int i_1 = (xx - 1) * 28;
-        unsigned int i_2 = i_1 + 28;
-        unsigned int i_3 = i_2 + 28;
-        unsigned int i_4 = i_3 + 28;
+    unsigned int i_1 = (xx - 1) * 28;
 
-        /*
-        if (debug && threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == 0
-            && blockIdx.x == 8 && blockIdx.y == 8 && blockIdx.z == 0
-                ) {
-            for (int filterIndex = 0; filterIndex < 5; filterIndex++) {
-                printf("\nFilter %d:\n", filterIndex);
-                for (int image_i = 0; image_i < 3; image_i++) {
-                    for (int image_j = 0; image_j < 3; image_j++) {
-                        int index = filterIndex * 9 + image_i * 3 + image_j;
-                        if (network[index] > 0.05f) {
-                            printf("X");
-                        } else if (network[index] > 0.025f) {
-                            printf("x");
-                        } else if (network[index] > -0.025f) {
-                            printf(",");
-                        } else {
-                            printf(".");
-                        }
+    /*
+    if (debug && threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == 0
+        && blockIdx.x == 8 && blockIdx.y == 8 && blockIdx.z == 0
+            ) {
+        for (int filterIndex = 0; filterIndex < 5; filterIndex++) {
+            printf("\nFilter %d:\n", filterIndex);
+            for (int image_i = 0; image_i < 3; image_i++) {
+                for (int image_j = 0; image_j < 3; image_j++) {
+                    int index = filterIndex * 9 + image_i * 3 + image_j;
+                    if (network[index] > 0.05f) {
+                        printf("X");
+                    } else if (network[index] > 0.025f) {
+                        printf("x");
+                    } else if (network[index] > -0.025f) {
+                        printf(",");
+                    } else {
+                        printf(".");
                     }
-                    printf("\n");
                 }
+                printf("\n");
             }
-            printf("\n");
         }
-         */
+        printf("\n");
+    }
+     */
 
 #pragma unroll
-        for (reused = 0; reused < 45; reused += 9) {
-            pooled = 0;
-            sum = 0;
-            sum += image[i_1 + (yy - 1)] * network[reused];
-            sum += image[i_1 + yy] * network[reused + 1];
-            sum += image[i_1 + (yy + 1)] * network[reused + 2];
+    for (reused = 0; reused < 45; reused += 9) {
+        pooled = 0;
+        sum = 0;
+        sum += image[i_1 + yy - 1] * network[reused];
+        sum += image[i_1 + yy] * network[reused + 1];
+        sum += image[i_1 + yy + 1] * network[reused + 2];
 
-            sum += image[i_2 + (yy - 1)] * network[reused + 3];
-            sum += image[i_2 + yy] * network[reused + 4];
-            sum += image[i_2 + (yy + 1)] * network[reused + 5];
+        sum += image[i_1 + 28 + yy - 1] * network[reused + 3];
+        sum += image[i_1 + 28 + yy] * network[reused + 4];
+        sum += image[i_1 + 28 + yy + 1] * network[reused + 5];
 
-            sum += image[i_3 + (yy - 1)] * network[reused + 6];
-            sum += image[i_3 + yy] * network[reused + 7];
-            sum += image[i_3 + (yy + 1)] * network[reused + 8];
+        sum += image[i_1 + 56 + yy - 1] * network[reused + 6];
+        sum += image[i_1 + 56 + yy] * network[reused + 7];
+        sum += image[i_1 + 56 + yy + 1] * network[reused + 8];
 
-            if (sum > pooled) {
-                pooled = sum;
-            }
-
-            // x = i + 1, y = j
-
-            sum = 0;
-            sum += image[i_2 + (yy - 1)] * network[reused];
-            sum += image[i_2 + yy] * network[reused + 1];
-            sum += image[i_2 + (yy + 1)] * network[reused + 2];
-
-            sum += image[i_3 + (yy - 1)] * network[reused + 3];
-            sum += image[i_3 + yy] * network[reused + 4];
-            sum += image[i_3 + (yy + 1)] * network[reused + 5];
-
-            sum += image[i_4 + (yy - 1)] * network[reused + 6];
-            sum += image[i_4 + yy] * network[reused + 7];
-            sum += image[i_4 + (yy + 1)] * network[reused + 8];
-            if (sum > pooled) {
-                pooled = sum;
-            }
-
-            // x = i, y = j + 1
-
-            sum = 0;
-            sum += image[i_1 + yy] * network[reused];
-            sum += image[i_1 + (yy + 1)] * network[reused + 1];
-            sum += image[i_1 + (yy + 2)] * network[reused + 2];
-
-            sum += image[i_2 + yy] * network[reused + 3];
-            sum += image[i_2 + (yy + 1)] * network[reused + 4];
-            sum += image[i_2 + (yy + 2)] * network[reused + 5];
-
-            sum += image[i_3 + yy] * network[reused + 6];
-            sum += image[i_3 + (yy + 1)] * network[reused + 7];
-            sum += image[i_3 + (yy + 2)] * network[reused + 8];
-            if (sum > pooled) {
-                pooled = sum;
-            }
-
-            // x = i + 1, y = j + 1
-
-            sum = 0;
-            sum += image[i_2 + yy] * network[reused];
-            sum += image[i_2 + (yy + 1)] * network[reused + 1];
-            sum += image[i_2 + (yy + 2)] * network[reused + 2];
-
-            sum += image[i_3 + yy] * network[reused + 3];
-            sum += image[i_3 + (yy + 1)] * network[reused + 4];
-            sum += image[i_3 + (yy + 2)] * network[reused + 5];
-
-            sum += image[i_4 + yy] * network[reused + 6];
-            sum += image[i_4 + (yy + 1)] * network[reused + 7];
-            sum += image[i_4 + (yy + 2)] * network[reused + 8];
-            if (sum > pooled) {
-                pooled = sum;
-            }
-
-            maxPooled[reused / 9 * 13 * 13 + threadIdx.x * 13 + threadIdx.y] = pooled;
+        if (sum > pooled) {
+            pooled = sum;
         }
+
+        // x = i + 1, y = j
+
+        sum = 0;
+        sum += image[i_1 + 28 + yy - 1] * network[reused];
+        sum += image[i_1 + 28 + yy] * network[reused + 1];
+        sum += image[i_1 + 28 + yy + 1] * network[reused + 2];
+
+        sum += image[i_1 + 56 + yy - 1] * network[reused + 3];
+        sum += image[i_1 + 56 + yy] * network[reused + 4];
+        sum += image[i_1 + 56 + yy + 1] * network[reused + 5];
+
+        sum += image[i_1 + 84 + yy - 1] * network[reused + 6];
+        sum += image[i_1 + 84 + yy] * network[reused + 7];
+        sum += image[i_1 + 84 + yy + 1] * network[reused + 8];
+        if (sum > pooled) {
+            pooled = sum;
+        }
+
+        // x = i, y = j + 1
+
+        sum = 0;
+        sum += image[i_1 + yy] * network[reused];
+        sum += image[i_1 + yy + 1] * network[reused + 1];
+        sum += image[i_1 + yy + 2] * network[reused + 2];
+
+        sum += image[i_1 + 28 + yy] * network[reused + 3];
+        sum += image[i_1 + 28 + yy + 1] * network[reused + 4];
+        sum += image[i_1 + 28 + yy + 2] * network[reused + 5];
+
+        sum += image[i_1 + 56 + yy] * network[reused + 6];
+        sum += image[i_1 + 56 + yy + 1] * network[reused + 7];
+        sum += image[i_1 + 56 + yy + 2] * network[reused + 8];
+        if (sum > pooled) {
+            pooled = sum;
+        }
+
+        // x = i + 1, y = j + 1
+
+        sum = 0;
+        sum += image[i_1 + 28 + yy] * network[reused];
+        sum += image[i_1 + 28 + yy + 1] * network[reused + 1];
+        sum += image[i_1 + 28 + yy + 2] * network[reused + 2];
+
+        sum += image[i_1 + 56 + yy] * network[reused + 3];
+        sum += image[i_1 + 56 + yy + 1] * network[reused + 4];
+        sum += image[i_1 + 56 + yy + 2] * network[reused + 5];
+
+        sum += image[i_1 + 84 + yy] * network[reused + 6];
+        sum += image[i_1 + 84 + yy + 1] * network[reused + 7];
+        sum += image[i_1 + 84 + yy + 2] * network[reused + 8];
+        if (sum > pooled) {
+            pooled = sum;
+        }
+
+        maxPooled[reused / 9 * 13 * 13 + threadIdx.x * 13 + threadIdx.y] = pooled;
     }
+    //}
 
     __syncthreads();
 
