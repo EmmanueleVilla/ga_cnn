@@ -14,7 +14,7 @@
 void loadLine(char *line, int *label, float *image, int index) {
     char delim[] = ",";
     char *next_token = nullptr;
-    char *ptr = strtok_s(line, delim, &next_token);
+    char *ptr = nullptr;// TODO restore this on win? strtok_s(line, delim, &next_token);
     int count = 0;
     while (ptr != nullptr) {
         char *unused;
@@ -26,7 +26,7 @@ void loadLine(char *line, int *label, float *image, int index) {
             image[index * 28 * 28 + count - 1] = pixel;
         }
         count++;
-        ptr = strtok_s(nullptr, delim, &next_token);
+        //ptr = strtok_s(nullptr, delim, &next_token);
     }
 }
 

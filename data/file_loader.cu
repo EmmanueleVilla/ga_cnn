@@ -11,16 +11,17 @@
  */
 FILE *readFile() {
     FILE *stream = nullptr;
-    errno_t err;
-    err = fopen_s(&stream, "C:\\Users\\emman\\CLionProjects\\ga-cnn\\data\\mnist_train.csv", "r");
+    int err;
+    err = fopen(&stream, "C:\\Users\\emman\\CLionProjects\\ga-cnn\\data\\mnist_train.csv", "r");
     if (err == 0) {
         printf("The file '../../data/mnist_train.csv' was opened\n");
     } else {
         printf("The file '../../data/mnist_train.csv' was not opened\n");
-        err = fopen_s(&stream, ".\\mnist_train.csv", "r");
+        err = fopen(&stream, ".\\mnist_train.csv", "r");
         if (err == 0) {
             printf("The fallback file 'mnist_train.csv' was opened\n");
         } else {
+	    err = fopen(&stream, "./mnist_train.csv", "r");
             printf("The fallback file 'mnist_train.csv' was not opened\n");
         }
     }

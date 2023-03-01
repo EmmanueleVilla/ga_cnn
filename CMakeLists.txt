@@ -1,8 +1,5 @@
-cmake_minimum_required(VERSION 3.24)
+cmake_minimum_required(VERSION 3.22)
 project(ga_cnn LANGUAGES CUDA CXX)
-
-include(CHECKLANGUAGE)
-check_language(CUDA)
 
 set(CMAKE_CUDA_STANDARD 17)
 
