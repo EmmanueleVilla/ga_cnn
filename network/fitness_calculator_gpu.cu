@@ -26,18 +26,24 @@ __global__ void calculateConvolutionGPU(
 
     unsigned int xx = threadIdx.x * 2;
     unsigned int yy = threadIdx.y * 2;
-    unsigned int reused = xx * 28 + yy;
-    image[reused] = images[imageIndex * 28 * 28 + reused];
-    reused = (xx + 1) * 28 + yy;
-    image[reused] = images[imageIndex * 28 * 28 + reused];
-    reused = xx * 28 + yy + 1;
-    image[reused] = images[imageIndex * 28 * 28 + reused];
-    reused = (xx + 1) * 28 + yy + 1;
-    image[reused] = images[imageIndex * 28 * 28 + reused];
+    unsigned int reused;
+
+    // I have 13x13=169 threads, so I can copy 169 pixels at once
+    // but the image is 28x28=784 pixels, so I need to copy 784/169=4.6 times
+    // each thread will copy 5 pixels
+    int start;
+#pragma unroll
+    for (start = 0; start < 845; start += 169) {
+        reused = threadIdx.x * 13 + threadIdx.y + start;
+        if (reused < 784) {
+            image[threadIdx.x * 13 + threadIdx.y + start] = images[imageIndex * 28 * 28 + reused];
+        }
+    }
 
     // copy the first 45 weights (the filters)
-    if (threadIdx.x < 45) {
-        network[threadIdx.x] = networks[networkIndex * NUM_WEIGHTS + threadIdx.x];
+    start = threadIdx.x * 13 + threadIdx.y;
+    if (start < 45) {
+        network[start] = networks[networkIndex * NUM_WEIGHTS + start];
     }
 
     __syncthreads();
@@ -251,7 +257,7 @@ __global__ void calculateConvolutionGPU(
         // I want to copy 1690 values of the network to shared memory
         // So each thread must copy 1690/169=10 values
         reused = networkIndex * NUM_WEIGHTS + 45 + yy * 13 * 13 * 10;
-        for (int start = 0; start < 1690; start += 169) {
+        for (start = 0; start < 1690; start += 169) {
             network[threadIdx.x * 13 + threadIdx.y + start] = networks[reused + threadIdx.x * 13 + threadIdx.y + start];
         }
 
