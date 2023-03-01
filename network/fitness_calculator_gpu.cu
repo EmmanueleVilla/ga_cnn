@@ -13,15 +13,14 @@ __global__ void calculateConvolutionGPU(
         const float *images,
         const float *networks,
         const int *labels,
-        float *fitness
-        //bool *d_big_fitness,
-        //int networkCount
+        float *fitness,
+        bool debug
 ) {
     unsigned int imageIndex = blockIdx.x;
     unsigned int networkIndex = blockIdx.y;
 
     __shared__ float image[IMAGE_INPUT_SIZE];
-    __shared__ float network[1690];
+    __shared__ float network[45];
     __shared__ float maxPooled[POOLED_SIZE];
 
     unsigned int xx = threadIdx.x * 2;
@@ -49,9 +48,8 @@ __global__ void calculateConvolutionGPU(
     __syncthreads();
 
     /*
-    //TODO: DEBUG MODE - COPIED IMAGE
-    if (threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == debugFilterIndex
-        && blockIdx.x == debugImageIndex && blockIdx.y == 0 && blockIdx.z == 0
+    if (debug && threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == 0
+        && blockIdx.x == 8 && blockIdx.y == 8 && blockIdx.z == 0
             ) {
         for (int image_i = 0; image_i < 28; image_i++) {
             for (int image_j = 0; image_j < 28; image_j++) {
@@ -74,16 +72,16 @@ __global__ void calculateConvolutionGPU(
 
     //TODO: DEBUG MODE
     // Verify all weights are copied
-    if (threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == 0
-        && blockIdx.x == 0 && blockIdx.y == 0 && blockIdx.z == 0
+    if (debug && threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == 0
+        && blockIdx.x == 8 && blockIdx.y == 8 && blockIdx.z == 0
             ) {
-        for (int iii = 0; iii < NUM_WEIGHTS; iii++) {
+        for (int iii = 0; iii < 45; iii++) {
             if (network[iii] == 0) {
                 printf("\nError at index %d\n", iii);
             }
         }
     }
-*/
+     */
     // To avoid saving partial values in memory, I merge the convolution, pooling and output steps.
     // The thread i, j will take care of calculating the convolution of the 4 pixels:
     // (i, j), (i+1, j), (i, j+1), (i+1, j+1)
@@ -109,10 +107,9 @@ __global__ void calculateConvolutionGPU(
         unsigned int j_3 = yy + 1;
         unsigned int j_4 = yy + 2;
 
-/*
-        //TODO: DEBUG MODE - FILTER
-        if (threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == debugFilterIndex
-            && blockIdx.x == debugImageIndex && blockIdx.y == 0 && blockIdx.z == 0
+        /*
+        if (debug && threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == 0
+            && blockIdx.x == 8 && blockIdx.y == 8 && blockIdx.z == 0
                 ) {
             for (int filterIndex = 0; filterIndex < 5; filterIndex++) {
                 printf("\nFilter %d:\n", filterIndex);
@@ -134,7 +131,8 @@ __global__ void calculateConvolutionGPU(
             }
             printf("\n");
         }
-*/
+         */
+
 #pragma unroll
         for (reused = 0; reused < 45; reused += 9) {
             pooled = 0;
@@ -216,9 +214,8 @@ __global__ void calculateConvolutionGPU(
     __syncthreads();
 
     /*
-    //TODO: DEBUG max pooled image
-    if (threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == debugFilterIndex
-        && blockIdx.x == debugImageIndex && blockIdx.y == 0 && blockIdx.z == 0
+    if (debug && threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == 0
+        && blockIdx.x == 8 && blockIdx.y == 8 && blockIdx.z == 0
             ) {
         for (int filterIndex = 0; filterIndex < 5; filterIndex++) {
             printf("Max pooled image #%d:\n", filterIndex);
@@ -242,7 +239,7 @@ __global__ void calculateConvolutionGPU(
             }
         }
     }
-*/
+     */
 
     __shared__ float sums[10];
     __shared__ float max;
@@ -251,6 +248,7 @@ __global__ void calculateConvolutionGPU(
     max = -999;
     index = 0;
 
+    /*
 #pragma unroll
     for (yy = 0; yy < 5; yy++) {
         // I have 13*13=169 threads.
@@ -280,9 +278,22 @@ __global__ void calculateConvolutionGPU(
         }
         __syncthreads();
     }
-
-    // Only one thread per block is responsible to calculate the dense layer
-    if (threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == 0) {
+     */
+    if (threadIdx.x == 0 && threadIdx.y == 0) {
+#pragma unroll
+        for (xx = 0; xx < 13 * 13 * 5; xx++) {
+            float input = maxPooled[xx];
+            sums[0] += input * networks[networkIndex * NUM_WEIGHTS + NET0 + xx];
+            sums[1] += input * networks[networkIndex * NUM_WEIGHTS + NET1 + xx];
+            sums[2] += input * networks[networkIndex * NUM_WEIGHTS + NET2 + xx];
+            sums[3] += input * networks[networkIndex * NUM_WEIGHTS + NET3 + xx];
+            sums[4] += input * networks[networkIndex * NUM_WEIGHTS + NET4 + xx];
+            sums[5] += input * networks[networkIndex * NUM_WEIGHTS + NET5 + xx];
+            sums[6] += input * networks[networkIndex * NUM_WEIGHTS + NET6 + xx];
+            sums[7] += input * networks[networkIndex * NUM_WEIGHTS + NET7 + xx];
+            sums[8] += input * networks[networkIndex * NUM_WEIGHTS + NET8 + xx];
+            sums[9] += input * networks[networkIndex * NUM_WEIGHTS + NET9 + xx];
+        }
 
         if (sums[0] > max) {
             max = sums[0];
@@ -362,7 +373,8 @@ void calculateFitnessGPU(
             d_images,
             d_networks,
             d_labels,
-            d_fitness
+            d_fitness,
+            false
     );
 
     CHECK(cudaDeviceSynchronize());
