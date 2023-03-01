@@ -12,12 +12,12 @@
 FILE *readFile() {
     FILE *stream = nullptr;
     stream = fopen("C:\\Users\\emman\\CLionProjects\\ga-cnn\\data\\mnist_train.csv", "r");
-    if (stream == nullptr) {
+    if (stream != nullptr) {
         printf("The file '../../data/mnist_train.csv' was opened\n");
     } else {
         printf("The file '../../data/mnist_train.csv' was not opened\n");
         stream = fopen(".\\mnist_train.csv", "r");
-        if (stream == nullptr) {
+        if (stream != nullptr) {
             printf("The fallback file 'mnist_train.csv' was opened\n");
         } else {
             stream = fopen("./mnist_train.csv", "r");
