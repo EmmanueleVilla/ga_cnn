@@ -35,12 +35,6 @@ __global__ void calculateConvolutionGPU(
     reused = (xx + 1) * 28 + yy + 1;
     image[reused] = images[imageIndex * 28 * 28 + reused];
 
-    // there are 8495 weights to be copied
-    // I have 845 threads per block
-    // so each thread will copy 11 weights
-    reused = threadIdx.x + blockDim.x * (threadIdx.y + blockDim.y * threadIdx.z);
-    //printf("tid: %d\n", tid);
-
     // copy the first 45 weights (the filters)
     if (threadIdx.x < 45) {
         network[threadIdx.x] = networks[networkIndex * NUM_WEIGHTS + threadIdx.x];
