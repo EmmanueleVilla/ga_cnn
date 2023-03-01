@@ -20,7 +20,7 @@ FILE *readFile() {
         if (stream != nullptr) {
             printf("The fallback file 'mnist_train.csv' was opened\n");
         } else {
-            stream = fopen("./mnist_train.csv", "r");
+            stream = fopen("/home/emmanuele/ga_cnn/data/mnist_train.csv", "r");
             printf("The fallback file 'mnist_train.csv' was not opened\n");
         }
     }
