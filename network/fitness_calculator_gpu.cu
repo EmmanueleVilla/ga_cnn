@@ -221,6 +221,7 @@ void calculateFitnessGPU(
 // To be able to sync the numFilters and avoid saving the conv in shared memory,
 // I could launch 13x13x5 threads, so < 1024
 // But I use 14x14 to parallelize the copy of the 28x28 image in shared memory
+// And avoid the x5 to divide by 5 the register usage
     dim3 block(14, 14);
 
     calculateConvolutionGPU<<<grid, block>>>(
