@@ -24,13 +24,11 @@ __global__ void calculateConvolutionGPU(
 
     // I have 13x13=169 threads, so I can copy 169 pixels at once
     // but the image is 28x28=784 pixels, so I need to copy 784/169=4.6 times
-    // each thread will copy 5 pixels
+    // each thread will copy 5 pixels, even if there is some overlap
 #pragma unroll
     for (xx = 0; xx < 845; xx += 169) {
         reused = threadIdx.x * 13 + threadIdx.y + xx;
-        //if (reused < 784) {
         image[threadIdx.x * 13 + threadIdx.y + xx] = images[blockIdx.x * 28 * 28 + reused];
-        //}
     }
 
     // copy the first 45 weights (the filters)
@@ -41,47 +39,11 @@ __global__ void calculateConvolutionGPU(
 
     __syncthreads();
 
-    /*
-    if (debug && threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == 0
-        && blockIdx.x == 8 && blockIdx.y == 8 && blockIdx.z == 0
-            ) {
-        for (int image_i = 0; image_i < 28; image_i++) {
-            for (int image_j = 0; image_j < 28; image_j++) {
-                int index = image_i * 28 + image_j;
-                if (image[index] > 0.5f) {
-                    printf("X");
-                } else if (image[index] > 0.25f) {
-                    printf("x");
-                } else if (image[index] > -0.25f) {
-                    printf(",");
-                } else if (image[index] > -0.5f) {
-                    printf(".");
-                } else {
-                    printf(" ");
-                }
-            }
-            printf("\n");
-        }
-    }
 
-    //TODO: DEBUG MODE
-    // Verify all weights are copied
-    if (debug && threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == 0
-        && blockIdx.x == 8 && blockIdx.y == 8 && blockIdx.z == 0
-            ) {
-        for (int iii = 0; iii < 45; iii++) {
-            if (network[iii] == 0) {
-                printf("\nError at index %d\n", iii);
-            }
-        }
-    }
-     */
-    // To avoid saving partial values in memory, I merge the convolution, pooling and output steps.
+    // To avoid saving partial values in memory, I merge the convolution and pooling steps.
     // The thread i, j will take care of calculating the convolution of the 4 pixels:
     // (i, j), (i+1, j), (i, j+1), (i+1, j+1)
     // and then it will take only the maximum value
-    // I skip the two threads used to copy the image
-    //if (threadIdx.x < 13 && threadIdx.y < 13) {
 
     float pooled = 0;
     float sum = 0;
@@ -92,32 +54,6 @@ __global__ void calculateConvolutionGPU(
 
 
     unsigned int i_1 = (xx - 1) * 28;
-
-    /*
-    if (debug && threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == 0
-        && blockIdx.x == 8 && blockIdx.y == 8 && blockIdx.z == 0
-            ) {
-        for (int filterIndex = 0; filterIndex < 5; filterIndex++) {
-            printf("\nFilter %d:\n", filterIndex);
-            for (int image_i = 0; image_i < 3; image_i++) {
-                for (int image_j = 0; image_j < 3; image_j++) {
-                    int index = filterIndex * 9 + image_i * 3 + image_j;
-                    if (network[index] > 0.05f) {
-                        printf("X");
-                    } else if (network[index] > 0.025f) {
-                        printf("x");
-                    } else if (network[index] > -0.025f) {
-                        printf(",");
-                    } else {
-                        printf(".");
-                    }
-                }
-                printf("\n");
-            }
-        }
-        printf("\n");
-    }
-     */
 
 #pragma unroll
     for (reused = 0; reused < 45; reused += 9) {
@@ -190,37 +126,8 @@ __global__ void calculateConvolutionGPU(
 
         maxPooled[reused / 9 * 13 * 13 + threadIdx.x * 13 + threadIdx.y] = pooled;
     }
-    //}
 
     __syncthreads();
-
-    /*
-    if (debug && threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == 0
-        && blockIdx.x == 8 && blockIdx.y == 8 && blockIdx.z == 0
-            ) {
-        for (int filterIndex = 0; filterIndex < 5; filterIndex++) {
-            printf("Max pooled image #%d:\n", filterIndex);
-            float *img = (float *) &maxPooled[filterIndex * 13 * 13];
-            for (int max_i = 0; max_i < 13; max_i++) {
-                for (int max_j = 0; max_j < 13; max_j++) {
-                    int index = max_i * 13 + max_j;
-                    if (img[index] > 0.5f) {
-                        printf("X");
-                    } else if (img[index] > 0.25f) {
-                        printf("x");
-                    } else if (img[index] > -0.25f) {
-                        printf(",");
-                    } else if (img[index] > -0.5f) {
-                        printf(".");
-                    } else {
-                        printf(" ");
-                    }
-                }
-                printf("\n");
-            }
-        }
-    }
-     */
 
     __shared__ float sums[10];
     __shared__ float max;
@@ -229,6 +136,10 @@ __global__ void calculateConvolutionGPU(
     max = -999;
     index = 0;
 
+    // threadIdx.x is the index of the output neuron (0-9)
+    // threadIx.y is the index of the filtered image (0-4)
+    // this is a tradeoff between using all threads for the output calculation
+    // and not having to many conflicts in the atomicAdd operation.
     if (threadIdx.x < 10 && threadIdx.y < 5) {
         yy = blockIdx.y * NUM_WEIGHTS + 45;
 #pragma unroll
@@ -237,6 +148,7 @@ __global__ void calculateConvolutionGPU(
         }
     }
 
+    // At last, only one thread per block checks the output label
     if (threadIdx.x == 0 && threadIdx.y == 0) {
         if (sums[0] > max) {
             max = sums[0];
