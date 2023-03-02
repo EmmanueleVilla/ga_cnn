@@ -229,11 +229,11 @@ __global__ void calculateConvolutionGPU(
     max = -999;
     index = 0;
 
-    if (threadIdx.x < 10 && threadIdx.y == 0) {
+    if (threadIdx.x < 10 && threadIdx.y < 5) {
         yy = blockIdx.y * NUM_WEIGHTS + 45;
 #pragma unroll
-        for (xx = 0; xx < 13 * 13 * 5; xx++) {
-            sums[threadIdx.x] += maxPooled[xx] * networks[yy + threadIdx.x * 13 * 13 * 5 + xx];
+        for (xx = 13 * 13 * threadIdx.y; xx < 13 * 13 * threadIdx.y + 13 * 13; xx++) {
+            atomicAdd(&sums[threadIdx.x], maxPooled[xx] * networks[yy + threadIdx.x * 13 * 13 * 5 + xx]);
         }
     }
 
