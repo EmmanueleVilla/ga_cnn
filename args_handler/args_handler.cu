@@ -93,7 +93,11 @@ bool handle(int argc, char **argv) {
                 maxFitness = fitness[i];
             }
         }
-        printf("%d) Max fitness: %f, generation time: %6.3ld\n", generation++, maxFitness, clock() - start);
+        if (generation == 0 || generation == 62 || generation == 125 || generation == 250 || generation == 500 ||
+            generation == 1000) {
+            printf("%d) Max fitness: %f, generation time: %6.3ld\n", generation, maxFitness, clock() - start);
+        }
+        generation++;
     }
 
     return true;
