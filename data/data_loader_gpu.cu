@@ -125,9 +125,10 @@ void loadDataWithGPU(int size, int *labels, float *images, FILE *stream, float *
 
     // First step: count the delimiter characters
     countDelimiters <<<blockSize, numThreads>>>(d_buffer, d_delimiters);
-	cudaError_t err = cudaGetLastError();
-if (err != cudaSuccess)
-    printf("Error: %s\n", cudaGetErrorString(err));
+    cudaError_t err = cudaGetLastError();
+    if (err != cudaSuccess) {
+        printf("Error: %s\n", cudaGetErrorString(err));
+    }
     CHECK(cudaDeviceSynchronize());
 
     cudaMemcpy(delimiters, d_delimiters, totalThreads * sizeof(int), D2H);

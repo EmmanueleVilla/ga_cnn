@@ -7,7 +7,6 @@
 
 #include <stdio.h>
 
-__device__ int v = 0;
 
 __global__ void calculateConvolutionGPU(
         const float *images,
@@ -230,17 +229,15 @@ __global__ void calculateConvolutionGPU(
     max = -999;
     index = 0;
 
-    if (threadIdx.x == 0 && threadIdx.y == 0) {
+    if (threadIdx.x < 10 && threadIdx.y == 0) {
         yy = blockIdx.y * NUM_WEIGHTS + 45;
 #pragma unroll
         for (xx = 0; xx < 13 * 13 * 5; xx++) {
-            float input = maxPooled[xx];
-#pragma unroll
-            for (reused = 0; reused < 10; reused++) {
-                sums[reused] += input * networks[yy + reused * 13 * 13 * 5 + xx];
-            }
+            sums[threadIdx.x] += maxPooled[xx] * networks[yy + threadIdx.x * 13 * 13 * 5 + xx];
         }
+    }
 
+    if (threadIdx.x == 0 && threadIdx.y == 0) {
         if (sums[0] > max) {
             max = sums[0];
             index = 0;
@@ -321,6 +318,11 @@ void calculateFitnessGPU(
             d_labels,
             d_fitness
     );
+
+    cudaError_t err = cudaGetLastError();
+    if (err != cudaSuccess) {
+        printf("Error: %s\n", cudaGetErrorString(err));
+    }
 
     CHECK(cudaDeviceSynchronize());
 
