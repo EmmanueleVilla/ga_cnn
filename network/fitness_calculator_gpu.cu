@@ -217,11 +217,10 @@ void calculateFitnessGPU(
 // grid = data, network and filter indexes
     dim3 grid(dataCount, networkCount);
 
-// 1 block = 1 network with 1 input image, 26x26 threads
+// 1 block = 1 network with 1 input image, 28x28x5 threads (too many)
 // To be able to sync the numFilters and avoid saving the conv in shared memory,
 // I could launch 13x13x5 threads, so < 1024
 // But I use 14x14 to parallelize the copy of the 28x28 image in shared memory
-// REFACTOR: launch 14x14 threads instead of 14x14x5 to reduce block registers usage
     dim3 block(14, 14);
 
     calculateConvolutionGPU<<<grid, block>>>(
