@@ -230,52 +230,15 @@ __global__ void calculateConvolutionGPU(
     max = -999;
     index = 0;
 
-    /*
-#pragma unroll
-    for (yy = 0; yy < 5; yy++) {
-        // I have 13*13=169 threads.
-        // I want to copy 1690 values of the network to shared memory
-        // So each thread must copy 1690/169=10 values
-        reused = blockIdx.y * NUM_WEIGHTS + 45 + yy * 13 * 13 * 10;
-        for (start = 0; start < 1690; start += 169) {
-            network[threadIdx.x * 13 + threadIdx.y + start] = networks[reused + threadIdx.x * 13 + threadIdx.y + start];
-        }
-
-        __syncthreads();
-
-        if (threadIdx.x == 0 && threadIdx.y == 0) {
-#pragma unroll
-            for (int poolIndex = 0; poolIndex < 13 * 13; poolIndex++) {
-                sums[0] += maxPooled[poolIndex] * network[poolIndex];
-                sums[1] += maxPooled[poolIndex] * network[poolIndex + 169];
-                sums[2] += maxPooled[poolIndex] * network[poolIndex + 169 * 2];
-                sums[3] += maxPooled[poolIndex] * network[poolIndex + 169 * 3];
-                sums[4] += maxPooled[poolIndex] * network[poolIndex + 169 * 4];
-                sums[5] += maxPooled[poolIndex] * network[poolIndex + 169 * 5];
-                sums[6] += maxPooled[poolIndex] * network[poolIndex + 169 * 6];
-                sums[7] += maxPooled[poolIndex] * network[poolIndex + 169 * 7];
-                sums[8] += maxPooled[poolIndex] * network[poolIndex + 169 * 8];
-                sums[9] += maxPooled[poolIndex] * network[poolIndex + 169 * 9];
-            }
-        }
-        __syncthreads();
-    }
-     */
     if (threadIdx.x == 0 && threadIdx.y == 0) {
-        yy = blockIdx.y * NUM_WEIGHTS;
+        yy = blockIdx.y * NUM_WEIGHTS + 45;
 #pragma unroll
         for (xx = 0; xx < 13 * 13 * 5; xx++) {
             float input = maxPooled[xx];
-            sums[0] += input * networks[yy + NET0 + xx];
-            sums[1] += input * networks[yy + NET1 + xx];
-            sums[2] += input * networks[yy + NET2 + xx];
-            sums[3] += input * networks[yy + NET3 + xx];
-            sums[4] += input * networks[yy + NET4 + xx];
-            sums[5] += input * networks[yy + NET5 + xx];
-            sums[6] += input * networks[yy + NET6 + xx];
-            sums[7] += input * networks[yy + NET7 + xx];
-            sums[8] += input * networks[yy + NET8 + xx];
-            sums[9] += input * networks[yy + NET9 + xx];
+#pragma unroll
+            for (reused = 0; reused < 10; reused++) {
+                sums[reused] += input * networks[yy + reused * 13 * 13 * 5 + xx];
+            }
         }
 
         if (sums[0] > max) {
