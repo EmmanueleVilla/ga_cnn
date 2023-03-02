@@ -22,9 +22,9 @@ __global__ void calculateConvolutionGPU(
     unsigned int yy;
     unsigned int reused;
 
-    // I have 13x13=169 threads, so I can copy 169 pixels at once
-    // but the image is 28x28=784 pixels, so I need to copy 784/169=4.6 times
-    // each thread will copy 5 pixels, even if there is some overlap
+    // I have 14x14=196 threads
+    // but the image is 28x28=784 pixels
+    // so each one will copy 4 pixels
 #pragma unroll
     for (xx = 0; xx < 845; xx += 169) {
         reused = threadIdx.x * 13 + threadIdx.y + xx;
