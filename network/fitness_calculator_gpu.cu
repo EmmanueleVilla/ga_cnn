@@ -214,7 +214,7 @@ void calculateFitnessGPU(
     cudaMemcpy(d_networks, networks, networkCount
                                      * NUM_WEIGHTS * sizeof(float), H2D);
 
-// grid = data, network and filter indexes
+// grid = data and network index
     dim3 grid(dataCount, networkCount);
 
 // 1 block = 1 network with 1 input image, 28x28x5 threads (too many)
