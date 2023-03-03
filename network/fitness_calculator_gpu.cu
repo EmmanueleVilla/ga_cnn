@@ -141,10 +141,10 @@ __global__ void calculateConvolutionGPU(
     // this is a tradeoff between using all threads for the output calculation
     // and not having to many conflicts in the atomicAdd operation.
     if (threadIdx.x < 10 && threadIdx.y < 5) {
-        yy = blockIdx.y * NUM_WEIGHTS + 45;
+        yy = blockIdx.y * NUM_WEIGHTS + 45 + threadIdx.x * 13 * 13 * 5;
 #pragma unroll
-        for (xx = 13 * 13 * threadIdx.y; xx < 13 * 13 * threadIdx.y + 13 * 13; xx++) {
-            atomicAdd(&sums[threadIdx.x], maxPooled[xx] * networks[yy + threadIdx.x * 13 * 13 * 5 + xx]);
+        for (xx = threadIdx.x * 10 + threadIdx.y; xx < 13 * 13 * 5; xx += 105) {
+            atomicAdd(&sums[threadIdx.x], maxPooled[xx] * networks[yy + xx]);
         }
     }
 
