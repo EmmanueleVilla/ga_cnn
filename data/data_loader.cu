@@ -36,5 +36,5 @@ void loadData(int size, int *labels, float *images, MODE mode, float *networks, 
     } else if (mode == GPU) {
         loadDataWithGPU(size, labels, images, stream, networks, networkCount);
     }
-    printData(2, labels, images);
+    printData(20, labels, images);
 }
