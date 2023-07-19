@@ -191,6 +191,7 @@ __global__ void calculateConvolutionGPU(
         }
 
         if (index == labels[blockIdx.x]) {
+            //fitness[blockIdx.y] += 1.0f / 600.0f;
             atomicAdd(&fitness[blockIdx.y], 1.0f / 600.0f);
         }
     }

@@ -114,8 +114,6 @@ float calculateFitnessCPUSingleNetwork(
     }
     end = clock();
 
-    printf("one network done in: \t%6.3ld\n", end - start);
-
     return ((float) correct / (float) dataCount * 100);
 }
 

@@ -35,21 +35,25 @@ bool handle(int argc, char **argv) {
 
     if (argMode == NONE) {
         printf("Mode not set. Use --mode or -m to set the mode.\n");
-        return false;
+        argMode = GPU;
+        //return false;
     }
 
     if (size < 1 || size > 60000) {
         printf("Data size not set or invalid. Must be between 1 and 60000. Use --data-size or -s to set the size.\n");
-        return false;
+        size = 60000;
+        //return false;
     }
 
     if (populationSize < 1) {
         printf("Population size not set or invalid. Must be a positive number. Use --pop-size or -p to set the size.\n");
-        return false;
+        populationSize = 80;
+        //return false;
     }
     if (gensCount < 0) {
         printf("Generation count not set or invalid. Must be a positive number. Use --gens-count or -g to set the size.\n");
-        return false;
+        gensCount = 1001;
+        //return false;
     }
 
     int *labels;
@@ -84,6 +88,17 @@ bool handle(int argc, char **argv) {
         cudaMemcpy(d_images, images, size * 28 * 28 * sizeof(float), H2D);
         cudaMemcpy(d_labels, labels, size * sizeof(int), H2D);
     }
+
+    auto backup = fopen("pop.txt", "rb"); // Open the file in binary read mode
+
+    if (backup != nullptr) {
+        fread(networks, sizeof(float), populationSize * NUM_WEIGHTS, backup);
+        fclose(backup); // Close the file
+        printf("Array read from file successfully.\n");
+    } else {
+        printf("Unable to open the file for reading.\n");
+    }
+
     while (generation < gensCount) {
         start = clock();
         calculateFitness(labels, images, networks, populationSize, size, fitness, d_labels, d_images, argMode);
@@ -102,7 +117,18 @@ bool handle(int argc, char **argv) {
             }
             fclose(fp);
         }
-        printf("%d) Max fitness: %f, generation time: %6.3ld\n", generation, maxFitness, clock() - start);
+        if (generation % 50 == 0) {
+            printf("%d) Max fitness: %f, generation time: %6.3ld\n", generation, maxFitness, clock() - start);
+            auto file = fopen("pop.txt", "wb");
+
+            if (file != NULL) {
+                fwrite(networks, sizeof(float), populationSize * NUM_WEIGHTS, file); // Write the array to the file
+                fclose(file); // Close the file
+                printf("Array written to file successfully.\n");
+            } else {
+                printf("Unable to open the file for writing.\n");
+            }
+        }
         generation++;
     }
 
